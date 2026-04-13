@@ -417,16 +417,22 @@ function fieldSelect(name, label, options, selected = '', required = false) {
   </div>`;
 }
 function fieldDateRange(startName, endName, label, startVal = '', endVal = '', required = false) {
-  const today = todayStr();
+  const today    = todayStr();
+  const tomorrow = nextDay(today);
   const defaultEnd = endVal || today;
+  const uid = Math.random().toString(36).slice(2, 7); // 고유 ID
   return `<div class="field-group">
     <label class="field-label">${label}${required ? '<span class="field-required">*</span>' : ''}
       <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">시작일 생략 시 하루짜리 업무로 처리</span>
     </label>
+    <div style="display:flex;gap:5px;margin-bottom:5px;">
+      <button type="button" class="date-quick-btn" data-target="${uid}" data-date="${today}">오늘</button>
+      <button type="button" class="date-quick-btn" data-target="${uid}" data-date="${tomorrow}">내일</button>
+    </div>
     <div class="date-range-wrap">
       <input class="field-input date-range-start" type="date" name="${startName}" value="${startVal}" placeholder="시작일 (선택)">
       <span class="date-range-sep">~</span>
-      <input class="field-input date-range-end" type="date" name="${endName}" value="${defaultEnd}" ${required?'required':''} placeholder="기한">
+      <input class="field-input date-range-end" id="dateEnd_${uid}" type="date" name="${endName}" value="${defaultEnd}" ${required?'required':''} placeholder="기한">
     </div>
   </div>`;
 }
@@ -473,6 +479,21 @@ function fieldRepeat(value = '') {
     </select>
   </div>`;
 }
+
+// ── 날짜 퀵 버튼 이벤트 ──────────────────
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.date-quick-btn');
+  if (!btn) return;
+  const uid    = btn.dataset.target;
+  const date   = btn.dataset.date;
+  const endInput = document.getElementById(`dateEnd_${uid}`);
+  if (endInput) {
+    endInput.value = date;
+    // 활성 버튼 표시
+    btn.closest('.field-group').querySelectorAll('.date-quick-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+});
 
 // ── 날짜 범위 유효성 ──────────────────────
 document.addEventListener('change', e => {

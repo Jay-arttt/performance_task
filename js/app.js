@@ -51,6 +51,7 @@ let state = {
   filterMedia: 'all',
   filterDue: 'all',
   filterPriority: 'all',
+  showCompleted: false,  // 완료 업무 기본 숨김
   resourceCat: '전체',
   viewDate: new Date(),
   sortKey: 'due',
@@ -100,6 +101,24 @@ function brandLabel(id) {
   return b ? b.label : s;
 }
 
+// 브랜드 컬러 → 태그 배경/텍스트 색 자동 생성
+function brandTagStyle(id) {
+  const color = brandColor(id);
+  if (!color || color === '#888780') return `background:#F2F1EE;color:#5C5B57;`;
+  // HEX → RGB
+  const r = parseInt(color.slice(1,3),16);
+  const g = parseInt(color.slice(3,5),16);
+  const b = parseInt(color.slice(5,7),16);
+  // 배경: 해당 컬러 15% 투명도
+  const bg = `rgba(${r},${g},${b},0.12)`;
+  // 텍스트: 원색보다 30% 어둡게
+  const dr = Math.round(r * 0.65);
+  const dg = Math.round(g * 0.65);
+  const db = Math.round(b * 0.65);
+  const text = `rgb(${dr},${dg},${db})`;
+  return `background:${bg};color:${text};`;
+}
+
 // ── 기한 유틸 ─────────────────────────────
 function dueInfo(ds) {
   if (!ds) return { label: '기한없음', cls: 'due-none' };
@@ -130,6 +149,8 @@ function driveLink(url, label) {
 // ── 필터 적용 ─────────────────────────────
 function applyFilters(tasks) {
   return tasks.filter(t => {
+    // 완료 업무 숨김
+    if (!state.showCompleted && t.status === '완료') return false;
     if (state.brand !== 'all' && t.brand !== state.brand) return false;
     if (state.member !== 'all') {
       const assignees = parseAssignees(t.assignee);
@@ -203,6 +224,9 @@ function renderFlowControls() {
         </select>
       </div>
       <div class="ctrl-spacer"></div>
+      <button class="completed-toggle ${state.showCompleted ? 'on' : ''}" id="completedToggle">
+        ${state.showCompleted ? '완료 숨기기' : '완료 포함'}
+      </button>
       <div class="view-toggle">
         <button class="vbtn ${state.flowView==='board'?'active':''}" data-flowview="board">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
@@ -223,6 +247,10 @@ function renderFlowControls() {
   document.getElementById('selMedia').addEventListener('change', e => { state.filterMedia = e.target.value; renderFlow(); });
   document.getElementById('selDue').addEventListener('change', e => { state.filterDue = e.target.value; renderFlow(); });
   document.getElementById('selPriority').addEventListener('change', e => { state.filterPriority = e.target.value; renderFlow(); });
+  document.getElementById('completedToggle')?.addEventListener('click', () => {
+    state.showCompleted = !state.showCompleted;
+    renderFlow();
+  });
   document.getElementById('flowControlsWrap').querySelectorAll('.vbtn').forEach(btn => {
     btn.addEventListener('click', () => { state.flowView = btn.dataset.flowview; renderFlow(); });
   });
@@ -233,9 +261,9 @@ function renderMetrics(items, type) {
   if (!wrap) return;
   if (type === 'flow') {
     const live    = items.filter(t => t.step === 'Live').length;
-    const over    = items.filter(t => dueInfo(t.due).cls === 'due-over' && t.step !== 'Live').length;
+    const over    = items.filter(t => dueInfo(t.due).cls === 'due-over' && t.step !== 'Live' && t.status !== '완료').length;
     const confirm = items.filter(t => t.status === '컨펌대기').length;
-    const urgent  = items.filter(t => t.priority === '긴급').length;
+    const urgent  = items.filter(t => t.priority === '긴급' && t.status !== '완료').length;
     wrap.innerHTML = `
       <div class="metric"><div class="mlabel">전체 업무</div><div class="mval">${items.length}</div></div>
       <div class="metric"><div class="mlabel">긴급</div><div class="mval danger">${urgent}</div></div>
@@ -344,7 +372,7 @@ function makeCampaignCard(t) {
       <span class="tag" style="background:${ss.bg};color:${ss.c}">${isLive ? '운영중' : t.status}</span>
       ${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : ''}
       ${isBid ? `<span class="tag bid-tag">입찰가</span>` : ''}
-      ${state.brand === 'all' ? `<span class="tag brand-tag">${brandLabel(t.brand)}</span>` : ''}
+      ${state.brand === 'all' ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : ''}
     </div>
     ${t.notes ? `<div class="card-notes-preview">${t.notes}</div>` : ''}
     ${driveLink(t.driveUrl, t.driveLabel)}
@@ -471,17 +499,26 @@ function renderFlowList(ft, container) {
           ${isUrgent ? '<span style="color:#E24B4A;margin-right:3px;">!</span>' : ''}${t.title}
         </span>
       </td>
-      <td><div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:${bColor};display:inline-block;flex-shrink:0;"></span>${bLabel}</div></td>
-      <td><span class="tag" style="background:${sp.bg};color:${sp.c}">${t.step}</span></td>
-      <td><span class="tag" style="background:${ss.bg};color:${ss.c}">${isLive?'운영중':t.status}</span></td>
-      <td>${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : ''}</td>
-      <td><div style="display:flex;">${renderAvatars(t.assignee, 20)}</div></td>
-      <td><span class="due-badge ${due.cls}">${isLive?'운영중':due.label}</span></td>
+      <td class="list-edit-cell" data-field="brand" data-id="${t.id}"><span class="tag" style="${brandTagStyle(bId)}">${bLabel}</span></td>
+      <td class="list-edit-cell" data-field="step"  data-id="${t.id}"><span class="tag" style="background:${sp.bg};color:${sp.c}">${t.step}</span></td>
+      <td class="list-edit-cell" data-field="status" data-id="${t.id}"><span class="tag" style="background:${ss.bg};color:${ss.c}">${isLive?'운영중':t.status}</span></td>
+      <td class="list-edit-cell" data-field="media" data-id="${t.id}">${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : '<span style="color:var(--color-text-tertiary);font-size:11px;">—</span>'}</td>
+      <td class="list-edit-cell" data-field="assignee" data-id="${t.id}"><div style="display:flex;">${renderAvatars(t.assignee, 20)}</div></td>
+      <td class="list-edit-cell" data-field="due" data-id="${t.id}"><span class="due-badge ${due.cls}">${isLive?'운영중':due.label}</span></td>
       <td>${driveLink(t.driveUrl, t.driveLabel)}</td>`;
 
     // 업무명 클릭 → 수정 모달
     tr.querySelector('.list-title-link').addEventListener('click', () => {
       openModal('edit', 'campaign', t);
+    });
+
+    // 인라인 편집 셀 클릭
+    tr.querySelectorAll('.list-edit-cell').forEach(cell => {
+      cell.style.cursor = 'pointer';
+      cell.addEventListener('click', e => {
+        e.stopPropagation();
+        openListInlineEditor(cell, t, cell.dataset.field, () => renderFlowList(ft, container));
+      });
     });
 
     tbody.appendChild(tr);
@@ -498,7 +535,92 @@ function renderFlowList(ft, container) {
   });
 }
 
-// ── 간트 뷰 ───────────────────────────────
+// ── 리스트 인라인 편집 ───────────────────
+function openListInlineEditor(cell, task, field, onSave) {
+  // 이미 편집 중이면 닫기
+  document.querySelectorAll('.list-inline-editor').forEach(e => e.remove());
+
+  const rect = cell.getBoundingClientRect();
+  const editor = document.createElement('div');
+  editor.className = 'list-inline-editor';
+  editor.style.cssText = `position:fixed;top:${rect.bottom+2}px;left:${rect.left}px;z-index:300;background:var(--color-background-primary);border:.5px solid var(--color-border-secondary);border-radius:8px;padding:4px;min-width:130px;`;
+
+  const STEP_OPTS    = ['소재기획','소재제작','소재등록','소재검수','Live'];
+  const STATUS_OPTS  = ['진행중','컨펌대기','완료'];
+  const MEDIA_OPTS   = ['','Meta','GFA','네이버 BSA','네이버 PL','네이버 쇼검','구글','카카오'];
+  const members      = getActiveMembers();
+
+  async function saveField(value) {
+    task[field] = value;
+    editor.remove();
+    try {
+      await callAppsScript({ action:'update', sheetName:'campaign', id:task.id, row:{ [field]: value } });
+    } catch(_) {}
+    onSave();
+  }
+
+  if (field === 'due') {
+    // 날짜 달력
+    const input = document.createElement('input');
+    input.type  = 'date';
+    input.value = task.due || '';
+    input.className = 'field-input';
+    input.style.cssText = 'font-size:12px;padding:4px 8px;width:140px;';
+    input.addEventListener('change', () => saveField(input.value));
+    editor.appendChild(input);
+    document.body.appendChild(editor);
+    input.focus();
+    input.showPicker?.();
+
+  } else if (field === 'assignee') {
+    // 담당자 체크박스
+    const current = parseAssignees(task.assignee);
+    members.forEach(m => {
+      const info    = getMemberInfo(m.name);
+      const checked = current.includes(m.name);
+      const row     = document.createElement('label');
+      row.style.cssText = 'display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:12px;';
+      row.innerHTML = `
+        <input type="checkbox" ${checked?'checked':''} style="width:13px;height:13px;">
+        <div style="width:18px;height:18px;border-radius:50%;background:${info.color}20;color:${info.color};border:1.5px solid ${info.color};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;">${info.initials}</div>
+        ${m.name}`;
+      row.querySelector('input').addEventListener('change', () => {
+        const checked = [...editor.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.closest('label').textContent.trim().replace(/^\S+\s+/, '').trim());
+        // 이름만 추출 (initials 제외)
+        const names = members.filter((_,i) => editor.querySelectorAll('input[type=checkbox]')[i].checked).map(m => m.name);
+        saveField(names.join(','));
+      });
+      editor.appendChild(row);
+    });
+    document.body.appendChild(editor);
+
+  } else {
+    // 드롭박스 (brand, step, status, media)
+    const opts = field === 'brand'  ? DB.brands.map(b => ({value:b.id||b.label, label:b.label}))
+               : field === 'step'   ? STEP_OPTS.map(s => ({value:s,label:s}))
+               : field === 'status' ? STATUS_OPTS.map(s => ({value:s,label:s}))
+               : MEDIA_OPTS.map(s => ({value:s, label:s||'없음'}));
+
+    opts.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.style.cssText = `display:block;width:100%;text-align:left;padding:6px 10px;font-size:12px;background:${opt.value===(task[field]||'') ?'var(--color-background-secondary)':'transparent'};border:none;border-radius:6px;cursor:pointer;font-family:inherit;color:var(--color-text-primary);`;
+      btn.textContent = opt.label;
+      btn.addEventListener('click', () => saveField(opt.value));
+      editor.appendChild(btn);
+    });
+    document.body.appendChild(editor);
+  }
+
+  // 외부 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!editor.contains(e.target)) {
+        editor.remove();
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 0);
+}
 function renderFlowGantt(ft, container) {
   const DAYS = 14;
   const dates = Array.from({ length: DAYS }, (_, i) => {
@@ -515,15 +637,28 @@ function renderFlowGantt(ft, container) {
     'Live':     '#1D9E75',
   };
 
-  const colW   = 36;
-  const nameW  = 180;
-  const stepW  = 72;
-  const memberW = 52;
+  // 매체 아이콘 약자
+  const MEDIA_ICON = {
+    'Meta': {icon:'M', bg:'#E6F1FB', c:'#0C447C'},
+    'GFA':  {icon:'G', bg:'#E1F5EE', c:'#085041'},
+    '네이버 BSA': {icon:'BSA', bg:'#EAF3DE', c:'#27500A'},
+    '네이버 PL':  {icon:'PL',  bg:'#EAF3DE', c:'#27500A'},
+    '네이버 쇼검':{icon:'쇼검', bg:'#EAF3DE', c:'#27500A'},
+    '구글':  {icon:'G', bg:'#FAECE7', c:'#712B13'},
+    '카카오':{icon:'K', bg:'#FAEEDA', c:'#633806'},
+  };
 
-  let html = `<div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+stepW+memberW+colW*DAYS}px">
+  const colW    = 36;
+  const nameW   = 160;
+  const mediaW  = 32;
+  const stepW   = 68;
+  const memberW = 46;
+
+  let html = `<div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+mediaW+stepW+memberW+colW*DAYS}px">
     <thead>
       <tr>
         <th style="width:${nameW}px;text-align:left;padding:5px 8px;">업무</th>
+        <th style="width:${mediaW}px;text-align:center;">매체</th>
         <th style="width:${stepW}px;text-align:center;">단계</th>
         <th style="width:${memberW}px;text-align:center;">담당</th>
         ${dates.map((d,i) => {
@@ -537,23 +672,38 @@ function renderFlowGantt(ft, container) {
 
   const sorted  = [...ft].filter(t => t.startDate).sort((a,b) => new Date(a.startDate)-new Date(b.startDate));
   const noDate  = ft.filter(t => !t.startDate);
+  const allRows = [...sorted, ...noDate];
 
-  [...sorted, ...noDate].forEach(t => {
-    const isLive  = t.step === 'Live';
-    const bId     = String(t.brand || '');
-    const bColor  = brandColor(bId);
+  // 업무명에서 · 매체 부분 분리
+  function splitTitle(title) {
+    const sep = title.lastIndexOf(' · ');
+    if (sep === -1) return { base: title, media: '' };
+    return { base: title.slice(0, sep), media: title.slice(sep + 3) };
+  }
+
+  let prevBaseName = null;
+
+  allRows.forEach((t, rowIdx) => {
+    const isLive    = t.step === 'Live';
+    const bId       = String(t.brand || '');
+    const bColor    = brandColor(bId);
     const stepColor = STEP_COLORS[t.step] || bColor;
+    const { base: baseName } = splitTitle(t.title);
+    const mi = MEDIA_ICON[t.media] || null;
+
+    // 이전 행과 기본 업무명 같으면 이름 숨김
+    const showName = baseName !== prevBaseName;
+    prevBaseName   = baseName;
 
     const start = t.startDate ? new Date(t.startDate) : null;
     const end   = t.due       ? new Date(t.due)       : null;
     if (start) start.setHours(0,0,0,0);
     if (end)   end.setHours(0,0,0,0);
 
-    // 바 범위 길이 계산 (텍스트 표시 여부 결정)
-    const barDays = (start && end) ? Math.round((end - start) / 86400000) + 1 : 0;
-    const showLabel = barDays >= 3; // 3일 이상일 때만 텍스트 표시
+    const barDays  = (start && end) ? Math.round((end - start) / 86400000) + 1 : 0;
+    const showLabel = barDays >= 3;
 
-    const cells = dates.map((d, di) => {
+    const cells = dates.map((d) => {
       const isToday   = sameDay(d, TODAY);
       const isWeekend = d.getDay()===0||d.getDay()===6;
       const bgBase    = isToday ? 'background:var(--color-background-info);' : isWeekend ? 'background:var(--color-background-secondary);' : '';
@@ -562,27 +712,33 @@ function renderFlowGantt(ft, container) {
       if (!inRange) return `<td style="${bgBase}"></td>`;
       const isStart = sameDay(d, start);
       const isEnd   = sameDay(d, end);
-      // 바 중앙 셀에 단계 텍스트 표시
       const midDate = new Date(start.getTime() + (end.getTime() - start.getTime()) / 2);
       midDate.setHours(0,0,0,0);
-      const isMid = showLabel && sameDay(d, midDate);
-      const radius = `${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
+      const isMid   = showLabel && sameDay(d, midDate);
+      const radius  = `${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
       const barStyle = `background:${stepColor};height:20px;margin:2px 1px;border-radius:${radius};display:flex;align-items:center;justify-content:center;overflow:hidden;`;
-      const label = isMid ? `<span style="font-size:9px;font-weight:600;color:white;white-space:nowrap;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none;">${t.step}</span>` : '';
+      const label   = isMid ? `<span style="font-size:9px;font-weight:600;color:white;white-space:nowrap;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none;">${t.step}</span>` : '';
       return `<td style="${bgBase}padding:0;"><div style="${barStyle}">${label}</div></td>`;
     }).join('');
 
-    const due = dueInfo(t.due);
     const stepStyle = `background:${stepColor}22;color:${stepColor};font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500;white-space:nowrap;`;
 
-    html += `<tr style="cursor:pointer;" class="gantt-row" data-id="${t.id}">
+    // 업무명 구분선 — 새 업무 시작 시 위쪽에 얇은 선
+    const rowBorder = showName && rowIdx > 0 ? 'border-top:1.5px solid var(--color-border-secondary);' : '';
+
+    html += `<tr style="cursor:pointer;${rowBorder}" class="gantt-row" data-id="${t.id}">
       <td style="padding:4px 8px;max-width:${nameW}px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;color:var(--text-1);" title="${t.title}">
-        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bColor};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>
-        ${t.priority === '긴급' ? '<span style="color:#E24B4A;font-size:10px;margin-right:3px;font-weight:700;">!</span>' : ''}
-        ${t.title}
+        ${showName ? `
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bColor};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>
+          ${t.priority === '긴급' ? '<span style="color:#E24B4A;font-size:10px;margin-right:3px;font-weight:700;">!</span>' : ''}
+          <span style="font-weight:500;">${baseName}</span>
+        ` : ''}
+      </td>
+      <td style="padding:3px;text-align:center;">
+        ${mi ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:18px;border-radius:4px;font-size:8px;font-weight:700;background:${mi.bg};color:${mi.c};" title="${t.media}">${mi.icon}</span>` : ''}
       </td>
       <td style="padding:4px;text-align:center;"><span style="${stepStyle}">${t.step}</span></td>
-      <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 18)}</div></td>
+      <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 17)}</div></td>
       ${cells}
     </tr>`;
   });
@@ -594,7 +750,6 @@ function renderFlowGantt(ft, container) {
   }
   container.innerHTML = html;
 
-  // 행 클릭 → 수정 모달
   container.querySelectorAll('.gantt-row').forEach(row => {
     row.addEventListener('click', () => {
       const t = DB.campaign.find(x => String(x.id) === String(row.dataset.id));
@@ -660,15 +815,84 @@ function renderDaily() {
     } else {
       allTasks.forEach(t => col.appendChild(makeDailyCard(t)));
     }
+
+    // 드롭 — 담당자 변경
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      col.classList.add('daily-drag-over');
+    });
+    col.addEventListener('dragleave', e => {
+      if (!col.contains(e.relatedTarget)) col.classList.remove('daily-drag-over');
+    });
+    col.addEventListener('drop', async e => {
+      e.preventDefault();
+      col.classList.remove('daily-drag-over');
+      try {
+        const { id, src } = JSON.parse(e.dataTransfer.getData('text/plain'));
+        const dbKey   = src === 'campaign' ? 'campaign' : src === 'common' ? 'common' : 'report';
+        const task    = DB[dbKey].find(x => String(x.id) === String(id));
+        if (!task) return;
+        const newAssignee = m.name;
+        const assignees   = parseAssignees(task.assignee);
+        if (assignees.includes(newAssignee)) return; // 이미 담당자면 스킵
+        task.assignee = newAssignee;
+        try { await callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ assignee: newAssignee } }); } catch(_) {}
+        showToast(`"${task.title}" → ${newAssignee}`);
+        renderDaily();
+      } catch(_) {}
+    });
+
     grid.appendChild(col);
+  });
+
+  // 날짜 드롭존 (데일리 네비 버튼 위에)
+  setupDailyDateDrop();
+}
+
+function setupDailyDateDrop() {
+  const prevBtn  = document.getElementById('prevDay');
+  const nextBtn  = document.getElementById('nextDay');
+  const todayBtn = document.getElementById('todayBtn');
+
+  [prevBtn, nextBtn, todayBtn].forEach(btn => {
+    if (!btn) return;
+    btn.addEventListener('dragover', e => { e.preventDefault(); btn.style.background = 'var(--color-background-info)'; });
+    btn.addEventListener('dragleave', () => { btn.style.background = ''; });
+    btn.addEventListener('drop', async e => {
+      e.preventDefault();
+      btn.style.background = '';
+      try {
+        const { id, src } = JSON.parse(e.dataTransfer.getData('text/plain'));
+        const dbKey = src === 'campaign' ? 'campaign' : src === 'common' ? 'common' : 'report';
+        const task  = DB[dbKey].find(x => String(x.id) === String(id));
+        if (!task) return;
+
+        let newDate;
+        if (btn === prevBtn) {
+          const d = new Date(state.viewDate); d.setDate(d.getDate() - 1);
+          newDate = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        } else if (btn === nextBtn) {
+          const d = new Date(state.viewDate); d.setDate(d.getDate() + 1);
+          newDate = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        } else {
+          newDate = todayStr();
+        }
+
+        task.due = newDate;
+        try { await callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ due: newDate } }); } catch(_) {}
+        showToast(`"${task.title}" 기한 → ${newDate}`);
+        renderDaily();
+      } catch(_) {}
+    });
   });
 }
 
 function makeDailyCard(t) {
-  const due = dueInfo(t.due);
-  const isLive = t.step === 'Live';
+  const due      = dueInfo(t.due);
+  const isLive   = t.step === 'Live';
   const isReport = t._src === 'report';
-  const isEtc = t._src === 'common';
+  const isEtc    = t._src === 'common';
+  const isUrgent = t.priority === '긴급';
   const ms = t.media ? MEDIA_STYLE[t.media] || null : null;
   const rs = isReport ? REPORT_STYLE[t.type] || null : null;
   const es = isEtc ? ETC_TYPES[t.type] || ETC_TYPES['기타'] : null;
@@ -676,12 +900,21 @@ function makeDailyCard(t) {
   const stepLabel = isReport ? t.type : isEtc ? (es?.label || '공통') : isLive ? 'Live' : (t.step || '');
 
   const el = document.createElement('div');
-  el.className = 'daily-card' + (isLive ? ' live-card' : '');
+  el.className = 'daily-card' + (isLive ? ' live-card' : '') + (isUrgent ? ' urgent-card' : '');
+  el.draggable = true;
+  el.dataset.id  = String(t.id);
+  el.dataset.src = t._src;
+  el.dataset.due = t.due || '';
+
   el.innerHTML = `
-    <div class="card-brand-bar" style="background:${t.brand ? brandColor(t.brand) : '#888780'}"></div>
-    <div class="card-title daily-title-link" style="cursor:pointer;">${t.title}</div>
+    <div class="card-brand-bar" style="background:${isUrgent ? '#E24B4A' : (t.brand ? brandColor(t.brand) : '#888780')}"></div>
+    <div class="card-title daily-title-link" style="cursor:pointer;">
+      ${isUrgent ? '<span style="color:#E24B4A;font-size:10px;margin-right:3px;font-weight:700;">!</span>' : ''}
+      ${t.title}
+    </div>
     <div class="card-tags">
-      ${t.brand ? `<span style="font-size:10px;font-weight:500;color:${brandColor(t.brand)}">${brandLabel(t.brand)}</span>` : '<span class="tag brand-tag">공통</span>'}
+      ${isUrgent ? '<span class="tag urgent-tag">긴급</span>' : ''}
+      ${t.brand ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : '<span class="tag brand-tag">공통</span>'}
       ${rs ? `<span class="tag" style="background:${rs.bg};color:${rs.c}">${t.type}</span>` : ''}
       ${es && isEtc ? `<span class="tag" style="background:${es.bg};color:${es.c}">${es.label}</span>` : ''}
       ${ss && !isEtc && !isReport ? `<span class="tag" style="background:${ss.bg};color:${ss.c}">${t.status}</span>` : ''}
@@ -696,9 +929,20 @@ function makeDailyCard(t) {
   // 업무명 클릭 → 수정 모달
   el.querySelector('.daily-title-link').addEventListener('click', () => {
     const sheetName = t._src === 'campaign' ? 'campaign' : t._src === 'common' ? 'common' : 'report';
-    const original  = DB[sheetName === 'campaign' ? 'campaign' : sheetName === 'common' ? 'common' : 'report']
-                      .find(x => String(x.id) === String(t.id));
+    const dbKey     = sheetName === 'campaign' ? 'campaign' : sheetName === 'common' ? 'common' : 'report';
+    const original  = DB[dbKey].find(x => String(x.id) === String(t.id));
     if (original) openModal('edit', sheetName, original);
+  });
+
+  // 드래그 이벤트
+  el.addEventListener('dragstart', e => {
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', JSON.stringify({ id: t.id, src: t._src, due: t.due }));
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    document.querySelectorAll('.daily-col').forEach(c => c.classList.remove('daily-drag-over'));
   });
 
   return el;
@@ -752,17 +996,24 @@ function renderEtc() {
     </select>`;
   document.getElementById('selMemberEtc')?.addEventListener('change', e => { state.member = e.target.value; renderEtc(); });
 
-  const filtered = DB.common.filter(t => state.member === 'all' || parseAssignees(t.assignee).includes(state.member));
+  const filtered = DB.common.filter(t =>
+    (state.member === 'all' || parseAssignees(t.assignee).includes(state.member)) &&
+    (state.showCompleted || !t.done)
+  );
   renderMetrics(filtered, 'etc');
 
   const container = document.getElementById('etcContainer');
   container.innerHTML = '';
 
-  // 추가 버튼
   const addBar = document.createElement('div');
-  addBar.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:12px;';
-  addBar.innerHTML = `<button class="modal-btn-save" onclick="openModal('add','common')" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>`;
+  addBar.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;';
+  addBar.innerHTML = `
+    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleEtc">${state.showCompleted?'완료 숨기기':'완료 포함'}</button>
+    <button class="modal-btn-save" onclick="openModal('add','common')" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>`;
   container.appendChild(addBar);
+  document.getElementById('completedToggleEtc')?.addEventListener('click', () => {
+    state.showCompleted = !state.showCompleted; renderEtc();
+  });
 
   Object.entries(ETC_TYPES).forEach(([typeName, style]) => {
     const group = filtered.filter(t => t.type === typeName);
@@ -834,16 +1085,22 @@ function renderReport() {
 
   const filtered = DB.report.filter(t =>
     (state.brand === 'all' || t.brand === state.brand) &&
-    (state.member === 'all' || parseAssignees(t.assignee).includes(state.member))
+    (state.member === 'all' || parseAssignees(t.assignee).includes(state.member)) &&
+    (state.showCompleted || !t.done)
   );
   renderMetrics(filtered, 'report');
   const grid = document.getElementById('reportGrid');
   grid.innerHTML = '';
 
-  // 추가 버튼
   const addBar = document.createElement('div');
-  addBar.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:12px;grid-column:1/-1;';
-  addBar.innerHTML = `<button class="modal-btn-save" onclick="openModal('add','report')" style="font-size:12px;padding:6px 14px;">+ 리포트 추가</button>`;
+  addBar.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;grid-column:1/-1;';
+  addBar.innerHTML = `
+    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleRpt">${state.showCompleted?'완료 숨기기':'완료 포함'}</button>
+    <button class="modal-btn-save" onclick="openModal('add','report')" style="font-size:12px;padding:6px 14px;">+ 리포트 추가</button>`;
+  grid.appendChild(addBar);
+  document.getElementById('completedToggleRpt')?.addEventListener('click', () => {
+    state.showCompleted = !state.showCompleted; renderReport();
+  });
   grid.appendChild(addBar);
   filtered.forEach(t => grid.appendChild(makeReportCard(t)));
 }
@@ -859,7 +1116,7 @@ function makeReportCard(t) {
     <button class="card-urgent-btn ${isUrgent ? 'on' : ''}" title="${isUrgent ? '긴급 해제' : '긴급 설정'}" data-id="${t.id}">!</button>
     <div class="report-card-top">
       <div class="report-icon" style="background:${rs.bg};color:${rs.c}">${t.type[0]}</div>
-      <div><div class="report-brand" style="color:${brandColor(t.brand)}">${brandLabel(t.brand)}</div><div class="report-type">${t.type}</div></div>
+      <div><div class="report-brand" style="color:${brandColor(t.brand)};font-size:11px;font-weight:600;background:${brandTagStyle(t.brand).match(/background:([^;]+)/)?.[1]||'transparent'};padding:1px 7px;border-radius:20px;display:inline-block;">${brandLabel(t.brand)}</div><div class="report-type">${t.type}</div></div>
       ${isUrgent ? `<span class="tag urgent-tag" style="margin-left:auto;">긴급</span>` : ''}
       ${t.repeat && t.repeat !== '' ? `<span class="tag" style="background:#E6F1FB;color:#0C447C;margin-left:auto;">↻ ${t.repeat==='daily'?'매일':t.repeat==='weekly'?'매주':'매월'}</span>` : ''}
     </div>
