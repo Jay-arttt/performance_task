@@ -50,6 +50,7 @@ let state = {
   filterMedia: 'all',
   filterDue: 'all',
   filterPriority: 'all',
+  resourceCat: '전체',
   viewDate: new Date(),
   sortKey: 'due',
   sortAsc: true,
@@ -810,10 +811,11 @@ function makeReportCard(t) {
 
 // ── 뷰 전환 ───────────────────────────────
 function renderCurrentView() {
-  if      (state.view === 'flow')   renderFlow();
-  else if (state.view === 'daily')  renderDaily();
-  else if (state.view === 'etc')    renderEtc();
-  else if (state.view === 'report') renderReport();
+  if      (state.view === 'flow')      renderFlow();
+  else if (state.view === 'daily')     renderDaily();
+  else if (state.view === 'etc')       renderEtc();
+  else if (state.view === 'report')    renderReport();
+  else if (state.view === 'resources') renderResources();
 }
 
 // ── 토스트 ────────────────────────────────
@@ -835,8 +837,7 @@ function bindEvents() {
       document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       document.querySelectorAll('.view-panel').forEach(p => p.hidden = true);
-      document.getElementById('panel-' + state.view).hidden = false;
-      renderCurrentView();
+      document.getElementById('panel-' + state.view).hidden = false;      renderCurrentView();
     });
   });
 
