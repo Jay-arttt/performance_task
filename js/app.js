@@ -860,7 +860,10 @@ function bindEvents() {
       document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       document.querySelectorAll('.view-panel').forEach(p => p.hidden = true);
-      document.getElementById('panel-' + state.view).hidden = false;      renderCurrentView();
+      document.getElementById('panel-' + state.view).hidden = false;
+      // 마지막 탭 저장
+      try { sessionStorage.setItem('last_tab', state.view); } catch {}
+      renderCurrentView();
     });
   });
 
@@ -880,13 +883,20 @@ async function main() {
   await initData();
   generateRecurringTasks();
   bindEvents();
-  // 데일리 업무 탭으로 시작
-  state.view = 'daily';
+
+  // 마지막으로 보던 탭 복원 (없으면 데일리 업무)
+  const VALID_VIEWS = ['daily','flow','report','etc','resources'];
+  let lastTab = 'daily';
+  try { lastTab = sessionStorage.getItem('last_tab') || 'daily'; } catch {}
+  if (!VALID_VIEWS.includes(lastTab)) lastTab = 'daily';
+
+  state.view = lastTab;
   document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
-  document.querySelector('[data-view="daily"]')?.classList.add('active');
+  document.querySelector(`[data-view="${lastTab}"]`)?.classList.add('active');
   document.querySelectorAll('.view-panel').forEach(p => p.hidden = true);
-  document.getElementById('panel-daily').hidden = false;
-  renderDaily();
+  document.getElementById('panel-' + lastTab).hidden = false;
+  renderCurrentView();
+
   document.getElementById('loadingOverlay').style.display = 'none';
   startAutoRefresh();
   const badge = document.getElementById('syncBadge');
