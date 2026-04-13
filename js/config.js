@@ -6,11 +6,14 @@
 const CONFIG = {
   // Google Sheets API Key (읽기 전용, 공개 시트용)
   // Google Cloud Console → API & Services → Credentials에서 발급
-  API_KEY: 'YOUR_GOOGLE_API_KEY',
+  API_KEY: 'AIzaSyCW8VT0yfP3ZZbk66kj9hDE6jUAdE31HvU',
 
   // Spreadsheet ID (Sheets URL에서 /d/ 뒤 문자열)
   // 예: https://docs.google.com/spreadsheets/d/[이부분]/edit
-  SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID',
+  SPREADSHEET_ID: '1DL-qfAUbym0biC2Xm6zaXrN1A1B9XzW1SFUhxuIDcLo',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxR_iSQ-5pBV1iYna8i-n9CQ5XW9CP-NNuspY3pRj0swJUIvKyJcB6Xi-Zhd-kpwcISYg/exec',
+
+  
 
   // 시트 이름 (Sheets 하단 탭 이름과 정확히 일치해야 함)
   SHEETS: {
