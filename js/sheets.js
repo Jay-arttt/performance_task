@@ -3,18 +3,49 @@
 // ─────────────────────────────────────────
 
 const SheetsAPI = (() => {
-  const BASE = 'https://sheets.googleapis.com/v4/spreadsheets';
+  const BASE        = 'https://sheets.googleapis.com/v4/spreadsheets';
+  const CACHE_KEY   = 'dashboard_cache';
+  const CACHE_TTL   = 5 * 60 * 1000; // 5분
 
-  // 시트 범위 읽기
+  // ── 캐시 읽기 ────────────────────────────
+  function getCache() {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const { data, ts } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL) return null;
+      return data;
+    } catch { return null; }
+  }
+
+  function setCache(data) {
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch {}
+  }
+
+  function clearCache() {
+    try { sessionStorage.removeItem(CACHE_KEY); } catch {}
+  }
+
+  // ── 단일 시트 읽기 ────────────────────────
   async function fetchRange(sheetName) {
     const url = `${BASE}/${CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(sheetName)}?key=${CONFIG.API_KEY}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Sheets API 오류: ${res.status}`);
+    if (!res.ok) throw new Error(`Sheets API 오류 (${sheetName}): ${res.status}`);
     const json = await res.json();
     return rowsToObjects(json.values || []);
   }
 
-  // 첫 행을 헤더로, 나머지를 객체 배열로 변환
+  // ── 배치 API — 한 번의 요청으로 모든 시트 읽기 ──
+  async function fetchAllBatch(sheetNames) {
+    const ranges = sheetNames.map(s => `ranges=${encodeURIComponent(s)}`).join('&');
+    const url    = `${BASE}/${CONFIG.SPREADSHEET_ID}/values:batchGet?${ranges}&key=${CONFIG.API_KEY}`;
+    const res    = await fetch(url);
+    if (!res.ok) throw new Error(`Sheets 배치 API 오류: ${res.status}`);
+    const json = await res.json();
+    return (json.valueRanges || []).map(vr => rowsToObjects(vr.values || []));
+  }
+
+  // ── 행 → 객체 변환 ────────────────────────
   function rowsToObjects(rows) {
     if (rows.length < 2) return [];
     const [headers, ...data] = rows;
@@ -22,75 +53,81 @@ const SheetsAPI = (() => {
       const obj = {};
       headers.forEach((h, i) => {
         const val = row[i] ?? '';
-        // 체크박스(TRUE/FALSE 문자열) → boolean
-        if (val === 'TRUE') obj[h] = true;
-        else if (val === 'FALSE') obj[h] = false;
-        // id 등 숫자 → number
-        else if (h === 'id' && val !== '') obj[h] = Number(val);
-        else obj[h] = val;
+        if      (val === 'TRUE')              obj[h] = true;
+        else if (val === 'FALSE')             obj[h] = false;
+        else if (h === 'id' && val !== '')    obj[h] = Number(val);
+        else                                  obj[h] = val;
       });
       return obj;
     });
   }
 
-  // 전체 데이터 로드
-  async function loadAll() {
-    const [campaign, common, report, brands, members] = await Promise.all([
-      fetchRange(CONFIG.SHEETS.CAMPAIGN),
-      fetchRange(CONFIG.SHEETS.COMMON),
-      fetchRange(CONFIG.SHEETS.REPORT),
-      fetchRange(CONFIG.SHEETS.BRAND),
-      fetchRange(CONFIG.SHEETS.MEMBER),
-    ]);
-    return { campaign, common, report, brands, members };
+  // ── 전체 데이터 로드 (배치 + 캐시) ──────────
+  async function loadAll(forceRefresh = false) {
+    if (!forceRefresh) {
+      const cached = getCache();
+      if (cached) {
+        console.info('[Dashboard] 캐시에서 로드');
+        return cached;
+      }
+    }
+
+    const sheetNames = [
+      CONFIG.SHEETS.CAMPAIGN,
+      CONFIG.SHEETS.COMMON,
+      CONFIG.SHEETS.REPORT,
+      CONFIG.SHEETS.BRAND,
+      CONFIG.SHEETS.MEMBER,
+      CONFIG.SHEETS.RESOURCES || '자료실',
+    ];
+
+    const [campaign, common, report, brands, members, resources] = await fetchAllBatch(sheetNames);
+    const data = { campaign, common, report, brands, members, resources };
+    setCache(data);
+    console.info('[Dashboard] Sheets 배치 로드 완료');
+    return data;
   }
 
-  // step 업데이트 (드래그 앤 드롭 시 호출)
-  // 쓰기는 OAuth가 필요해서 GitHub Actions 방식으로 대체 가능
-  // 여기서는 로컬 상태만 업데이트하고 Sheets는 팀원이 직접 수정하는 구조
   function updateLocalStep(tasks, taskId, newStep) {
     const t = tasks.find(x => x.id === taskId);
     if (t) t.step = newStep;
     return tasks;
   }
-
   function updateLocalDone(tasks, taskId, done) {
     const t = tasks.find(x => x.id === taskId);
     if (t) t.done = done;
     return tasks;
   }
 
-  return { loadAll, updateLocalStep, updateLocalDone };
+  return { loadAll, clearCache, updateLocalStep, updateLocalDone };
 })();
 
 // ─────────────────────────────────────────
-//  데이터 초기화 — Sheets 또는 샘플
+//  데이터 초기화
 // ─────────────────────────────────────────
-let DB = { campaign: [], common: [], report: [], brands: [] };
+let DB = { campaign:[], common:[], report:[], brands:[], members:[], resources:[] };
 
 async function initData() {
   if (USE_SAMPLE_DATA) {
     DB = { ...SAMPLE };
-    console.info('[Dashboard] 샘플 데이터로 실행 중. config.js에 API Key를 설정하세요.');
+    console.info('[Dashboard] 샘플 데이터로 실행 중');
     return;
   }
   try {
     DB = await SheetsAPI.loadAll();
-    console.info('[Dashboard] Sheets 데이터 로드 완료');
   } catch (e) {
     console.warn('[Dashboard] Sheets 로드 실패, 샘플 데이터로 대체:', e.message);
     DB = { ...SAMPLE };
   }
 }
 
-// 자동 새로고침
+// ── 자동 새로고침 ─────────────────────────
 function startAutoRefresh() {
   if (!CONFIG.REFRESH_INTERVAL || USE_SAMPLE_DATA) return;
   setInterval(async () => {
     try {
-      DB = await SheetsAPI.loadAll();
+      DB = await SheetsAPI.loadAll(true); // 캐시 무시하고 강제 갱신
       renderCurrentView();
-      showToast('데이터 갱신됨');
     } catch (e) { /* silent */ }
   }, CONFIG.REFRESH_INTERVAL);
 }
