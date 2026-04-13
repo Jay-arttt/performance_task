@@ -143,6 +143,12 @@ function buildBulkModalHTML() {
       </div>
       <div style="height:.5px;background:var(--color-border-tertiary);"></div>
       <div class="field-group">
+        <label class="field-label">내용 · 메모
+          <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">모든 단계 카드에 동일하게 적용</span>
+        </label>
+        <textarea class="field-input field-textarea" id="bulkNotes" rows="3" placeholder="내용 · 메모 입력"></textarea>
+      </div>
+      <div class="field-group">
         <label class="field-label">단계별 일정
           <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;">— 기한 변경 시 다음 단계 시작일 자동 업데이트</span>
         </label>
@@ -224,6 +230,7 @@ async function submitBulk() {
   const brand        = document.getElementById('bulkBrand').value;
   const baseTitle    = document.getElementById('bulkTitle').value.trim();
   const priority     = document.getElementById('bulkPriority').value;
+  const notes        = document.getElementById('bulkNotes').value.trim();
   const selectedMedia = [...document.querySelectorAll('#bulkMediaPicker .assignee-chip.checked')].map(c => c.dataset.media);
   const starts = [...document.querySelectorAll('.bulk-start')].map(i => i.value);
   const ends   = [...document.querySelectorAll('.bulk-end')].map(i => i.value);
@@ -251,7 +258,7 @@ async function submitBulk() {
           media, hasBid: isBid ? 'TRUE' : 'FALSE',
           assignee: stepAssignees[i] || '',
           startDate: starts[i] || '', due: ends[i],
-          notes: '', driveUrl: '', driveLabel: '',
+          notes, driveUrl: '', driveLabel: '',
         });
       }
       allRows.push({
@@ -260,7 +267,7 @@ async function submitBulk() {
         media, hasBid: isBid ? 'TRUE' : 'FALSE',
         assignee: stepAssignees[stepAssignees.length - 1] || '',
         startDate: '', due: '',
-        notes: '', driveUrl: '', driveLabel: '',
+        notes, driveUrl: '', driveLabel: '',
       });
     }
     for (const row of allRows) {
