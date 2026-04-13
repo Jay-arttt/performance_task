@@ -2,7 +2,11 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="팀 대시보드">
   <title>퍼포먼스 팀 대시보드</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -29,16 +33,13 @@
     <button class="view-tab" data-view="report">리포트 · 미팅</button>
   </nav>
 
-  <!-- 공통 컨트롤 -->
   <div class="brand-tabs-wrap" id="brandTabsWrap"></div>
   <div id="flowControlsWrap"></div>
   <div class="member-filter-wrap" id="memberFilterWrap"></div>
   <div class="metrics-wrap" id="metricsWrap"></div>
 
-  <!-- 캠페인 플로우 -->
   <div class="view-panel" id="panel-flow"></div>
 
-  <!-- 데일리 뷰 -->
   <div class="view-panel" id="panel-daily" hidden>
     <div class="daily-nav">
       <button class="day-nav-btn" id="prevDay">←</button>
@@ -49,17 +50,18 @@
     <div class="daily-grid" id="dailyGrid"></div>
   </div>
 
-  <!-- 공통 업무 -->
   <div class="view-panel" id="panel-etc" hidden>
     <div id="etcContainer"></div>
   </div>
 
-  <!-- 리포트 · 미팅 -->
   <div class="view-panel" id="panel-report" hidden>
     <div class="report-grid" id="reportGrid"></div>
   </div>
 
 </div>
+
+<!-- 모바일 FAB 버튼 -->
+<button class="mobile-add-fab" id="mobileFab" title="업무 추가">+</button>
 
 <div class="toast-wrap">
   <div class="toast" id="toast"></div>
@@ -68,8 +70,20 @@
 <script src="js/config.js"></script>
 <script src="js/sample-data.js"></script>
 <script src="js/sheets.js"></script>
+<script src="js/recurring.js"></script>
 <script src="js/modal.js"></script>
 <script src="js/app.js"></script>
+
+<script>
+  // 모바일 FAB — 현재 뷰에 맞는 모달 열기
+  document.getElementById('mobileFab').addEventListener('click', () => {
+    const view = document.querySelector('.view-tab.active')?.dataset.view;
+    if (view === 'flow')   openModal('bulk');
+    else if (view === 'etc')    openModal('add', 'common');
+    else if (view === 'report') openModal('add', 'report');
+    else openModal('bulk');
+  });
+</script>
 
 </body>
 </html>
