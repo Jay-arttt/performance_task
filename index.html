@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="팀 대시보드">
-  <title>퍼포먼스 팀 대시보드</title>
+  <title>퍼포먼스 업무 관리</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -20,7 +20,7 @@
 <div class="app-wrapper">
 
   <header class="app-header">
-    <span class="app-title">퍼포먼스 팀 대시보드</span>
+    <span class="app-title">퍼포먼스 업무 관리</span>
     <div class="header-right">
       <span class="sync-badge sample" id="syncBadge">로딩 중</span>
     </div>
@@ -31,6 +31,7 @@
     <button class="view-tab" data-view="daily">데일리 뷰</button>
     <button class="view-tab" data-view="etc">공통 업무</button>
     <button class="view-tab" data-view="report">리포트 · 미팅</button>
+    <button class="view-tab" data-view="resources">자료실</button>
   </nav>
 
   <div class="brand-tabs-wrap" id="brandTabsWrap"></div>
@@ -58,6 +59,9 @@
     <div class="report-grid" id="reportGrid"></div>
   </div>
 
+  <!-- 자료실 -->
+  <div class="view-panel" id="panel-resources" hidden></div>
+
 </div>
 
 <!-- 모바일 FAB 버튼 -->
@@ -72,15 +76,16 @@
 <script src="js/sheets.js"></script>
 <script src="js/recurring.js"></script>
 <script src="js/modal.js"></script>
+<script src="js/resources.js"></script>
 <script src="js/app.js"></script>
 
 <script>
-  // 모바일 FAB — 현재 뷰에 맞는 모달 열기
   document.getElementById('mobileFab').addEventListener('click', () => {
     const view = document.querySelector('.view-tab.active')?.dataset.view;
-    if (view === 'flow')   openModal('bulk');
+    if (view === 'flow')        openModal('bulk');
     else if (view === 'etc')    openModal('add', 'common');
     else if (view === 'report') openModal('add', 'report');
+    else if (view === 'resources') openResourceModal();
     else openModal('bulk');
   });
 </script>
