@@ -433,13 +433,13 @@ button { font-family: inherit; cursor: pointer; }
 /* ── 모달 ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;transition:opacity .18s;padding:16px;}
 .modal-overlay.show{opacity:1;}
-.modal-box{background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);}
+.modal-box{background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:480px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .modal-title{font-size:14px;font-weight:600;color:var(--text-1);}
 .modal-close{background:none;border:none;font-size:16px;color:var(--text-3);cursor:pointer;padding:2px 6px;border-radius:4px;}
 .modal-close:hover{background:var(--surface2);color:var(--text-1);}
-.modal-body{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--border);}
+.modal-body{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;flex:1;-webkit-overflow-scrolling:touch;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;}
 .modal-btn-cancel{font-size:13px;padding:7px 16px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:transparent;color:var(--text-2);cursor:pointer;font-family:inherit;}
 .modal-btn-cancel:hover{background:var(--surface2);}
 .modal-btn-save{font-size:13px;padding:7px 16px;border-radius:var(--radius-sm);border:none;background:var(--text-1);color:var(--surface);cursor:pointer;font-family:inherit;font-weight:500;}
@@ -505,9 +505,9 @@ button { font-family: inherit; cursor: pointer; }
   .daily-grid{grid-template-columns:1fr;}
   .etc-grid{grid-template-columns:1fr 1fr;}
   .report-grid{grid-template-columns:1fr 1fr;}
-  .modal-box{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+  .modal-box{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;max-height:95vh;}
   .modal-overlay{align-items:flex-end;padding:0;}
-  .modal-body{max-height:70vh;}
+  .modal-body{max-height:calc(95vh - 120px);}
   .date-range-wrap{flex-direction:column;gap:4px;}
   .date-range-sep{display:none;}
   .bulk-step-row{flex-wrap:wrap;gap:6px;}
@@ -556,3 +556,16 @@ button { font-family: inherit; cursor: pointer; }
   display:flex;background:#FCEBEB;border-color:#F09595;color:#791F1F;
 }
 .card-urgent-btn:hover{background:#FCEBEB;border-color:#E24B4A;color:#E24B4A;}
+
+/* ── 캠페인 카드 완료 체크 ── */
+.campaign-done-check{margin-left:auto;}
+.task-card.status-done{opacity:.55;}
+.task-card.status-done .card-title{text-decoration:line-through;color:var(--text-2);}
+
+/* ── 리스트 뷰 업무명 링크 ── */
+.list-title-link{color:var(--text-1);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .12s,color .12s;}
+.list-title-link:hover{color:var(--info);border-bottom-color:var(--info);}
+.list-title-link.urgent-title{color:var(--danger);}
+
+/* ── 간트 행 hover ── */
+.gantt-row:hover td{background:var(--color-background-secondary);}
