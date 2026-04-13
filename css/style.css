@@ -41,7 +41,7 @@
   :root {
     --bg:       #18171A;
     --surface:  #242228;
-    --surface2: #2E2C33;
+    --surface2: #2A2830;
     --border:   rgba(255,255,255,0.08);
     --border-md:rgba(255,255,255,0.14);
     --text-1:   #F0EEE8;
@@ -63,14 +63,14 @@ a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; }
 
 /* ── 레이아웃 ── */
-.app-wrapper { max-width: 1400px; margin: 0 auto; padding: 20px 20px 60px; }
+.app-wrapper { max-width: 1400px; margin: 0 auto; padding: 24px 28px 80px; }
 
 /* ── 헤더 ── */
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
 }
-.app-title { font-size: 16px; font-weight: 600; color: var(--text-1); }
+.app-title { font-size: 17px; font-weight: 600; color: var(--text-1); }
 .header-right { display: flex; align-items: center; gap: 8px; }
 .sync-badge {
   font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500;
@@ -125,31 +125,32 @@ button { font-family: inherit; cursor: pointer; }
 .fbtn.active { background: var(--text-1); color: var(--surface); border-color: var(--text-1); }
 
 /* ── 메트릭 ── */
-.metrics-wrap { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 14px; }
+.metrics-wrap { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
 .metric {
-  background: var(--surface2); border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  background: var(--surface); border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: 14px 16px;
 }
-.mlabel { font-size: 11px; color: var(--text-3); margin-bottom: 2px; }
-.mval { font-size: 20px; font-weight: 600; color: var(--text-1); }
+.mlabel { font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+.mval { font-size: 22px; font-weight: 600; color: var(--text-1); }
 .mval.danger  { color: var(--danger); }
 .mval.warn    { color: var(--warn); }
 .mval.success { color: var(--success); }
 .mval.info    { color: var(--info); }
 
 /* ── 카드 공통 ── */
-.card-brand-bar { height: 3px; border-radius: 2px; margin-bottom: 7px; }
-.card-title { font-size: 12px; font-weight: 500; color: var(--text-1); line-height: 1.4; margin-bottom: 5px; }
-.card-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 5px; }
+.card-brand-bar { height: 3px; border-radius: 2px; margin-bottom: 8px; }
+.card-title { font-size: 12px; font-weight: 500; color: var(--text-1); line-height: 1.45; margin-bottom: 6px; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .tag {
-  font-size: 10px; padding: 1px 6px; border-radius: 20px;
+  font-size: 10px; padding: 2px 7px; border-radius: 20px;
   background: var(--surface2); color: var(--text-2);
 }
 .bid-tag  { background: #FAEEDA; color: #633806; font-weight: 500; }
 .brand-tag { background: var(--surface2); color: var(--text-3); }
 .brand-color-tag { font-weight: 500; background: transparent; padding: 0; }
 .card-footer {
-  display: flex; align-items: center; gap: 6px; margin-top: 6px;
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
 }
 .step-label { font-size: 10px; color: var(--text-3); margin-left: auto; }
 
@@ -198,12 +199,13 @@ button { font-family: inherit; cursor: pointer; }
    캠페인 플로우 뷰
 ────────────────────────────────────────── */
 .flow-scroll { overflow-x: auto; padding-bottom: 8px; }
-.flow-board  { display: flex; gap: 8px; min-width: max-content; padding: 2px; }
+.flow-board  { display: flex; gap: 10px; min-width: max-content; padding: 2px; }
 
 .flow-col {
-  width: 156px; flex-shrink: 0;
-  background: var(--surface2); border-radius: var(--radius-md);
-  padding: 10px; min-height: 280px;
+  width: 168px; flex-shrink: 0;
+  background: var(--surface2);
+  border-radius: var(--radius-md);
+  padding: 12px; min-height: 300px;
   transition: background .15s;
 }
 .flow-col.live-col { background: #E1F5EE; }
@@ -232,8 +234,8 @@ button { font-family: inherit; cursor: pointer; }
 
 .task-card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 9px;
-  margin-bottom: 6px; cursor: grab; user-select: none;
+  border-radius: var(--radius-md); padding: 11px 12px;
+  margin-bottom: 8px; cursor: grab; user-select: none;
   transition: border-color .1s, opacity .15s, transform .1s;
 }
 .task-card:active  { cursor: grabbing; }
@@ -489,7 +491,7 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ── 반응형 모바일 ── */
 @media (max-width:768px){
-  .app-wrapper{padding:12px 12px 80px;}
+  .app-wrapper{padding:16px 16px 80px;}
   .app-header{flex-direction:column;align-items:flex-start;gap:6px;}
   .view-tabs{overflow-x:auto;scrollbar-width:none;}
   .view-tabs::-webkit-scrollbar{display:none;}
@@ -600,10 +602,10 @@ button { font-family: inherit; cursor: pointer; }
 /* ── 자료실 ── */
 .res-toolbar{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  padding:10px 0 10px;
+  padding:10px 0;
   position:sticky;top:0;z-index:10;
-  background:var(--bg);
-  border-bottom:.5px solid var(--border);
+  background:var(--color-background-primary);
+  border-bottom:.5px solid var(--color-border-secondary);
   margin-bottom:0;
 }
 .res-search{font-size:12px;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:var(--surface);color:var(--text-1);font-family:inherit;flex:1;min-width:130px;}
@@ -611,8 +613,8 @@ button { font-family: inherit; cursor: pointer; }
 .res-count{font-size:11px;color:var(--text-3);white-space:nowrap;}
 .tbl-wrap{overflow-x:auto;margin-top:0;}
 .res-table{width:100%;border-collapse:collapse;font-size:12px;}
-.res-table thead tr{border-bottom:.5px solid var(--border-md);}
-.res-table th{padding:8px 10px;text-align:left;font-size:11px;font-weight:500;color:var(--text-3);white-space:nowrap;background:var(--bg);position:sticky;top:52px;z-index:9;}
+.res-table thead tr{border-bottom:.5px solid var(--color-border-secondary);}
+.res-table th{padding:8px 10px;text-align:left;font-size:11px;font-weight:500;color:var(--text-3);white-space:nowrap;background:var(--color-background-primary);}
 .res-th-sortable{cursor:pointer;user-select:none;}
 .res-th-sortable:hover{color:var(--text-1);}
 .res-table tbody tr{border-bottom:.5px solid var(--border);transition:background .1s;}
