@@ -72,7 +72,7 @@ function renderResources() {
     <div class="res-toolbar" id="resToolbar">
       <select class="ctrl-select" id="resCatSel">
         <option value="">카테고리 전체</option>
-        ${cats.map(c => `<option value="${c}" ${resCatFilter===c?'selected':''}>${c}</option>`).join('')}
+        ${getUniqueCats(getResources()).map(c => `<option value="${c}" ${resCatFilter===c?'selected':''}>${c}</option>`).join('')}
       </select>
       <input class="res-search" id="resSearch" placeholder="제목 검색..." value="${resSearch}">
       <span class="res-count" id="resCount"></span>
