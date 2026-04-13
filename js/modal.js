@@ -7,6 +7,7 @@ const FLOW_STEPS_BULK = ['소재기획','소재제작','소재등록','소재검
 
 // ── API 호출 ──────────────────────────────
 async function callAppsScript(payload) {
+  console.log('API 호출:', JSON.stringify(payload)); // 디버그
   const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
     method: 'POST',
     body: JSON.stringify(payload),
