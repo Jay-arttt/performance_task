@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>퍼포먼스 팀 대시보드</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">대시보드 불러오는 중...</div>
+</div>
+
+<div class="app-wrapper">
+
+  <header class="app-header">
+    <span class="app-title">퍼포먼스 팀 대시보드</span>
+    <div class="header-right">
+      <span class="sync-badge sample" id="syncBadge">로딩 중</span>
+    </div>
+  </header>
+
+  <nav class="view-tabs">
+    <button class="view-tab active" data-view="flow">캠페인 플로우</button>
+    <button class="view-tab" data-view="daily">데일리 뷰</button>
+    <button class="view-tab" data-view="etc">공통 업무</button>
+    <button class="view-tab" data-view="report">리포트 · 미팅</button>
+  </nav>
+
+  <!-- 공통 컨트롤 -->
+  <div class="brand-tabs-wrap" id="brandTabsWrap"></div>
+  <div id="flowControlsWrap"></div>
+  <div class="member-filter-wrap" id="memberFilterWrap"></div>
+  <div class="metrics-wrap" id="metricsWrap"></div>
+
+  <!-- 캠페인 플로우 -->
+  <div class="view-panel" id="panel-flow"></div>
+
+  <!-- 데일리 뷰 -->
+  <div class="view-panel" id="panel-daily" hidden>
+    <div class="daily-nav">
+      <button class="day-nav-btn" id="prevDay">←</button>
+      <span class="date-label" id="dailyDateLabel"></span>
+      <button class="day-nav-btn" id="nextDay">→</button>
+      <button class="today-btn" id="todayBtn">오늘</button>
+    </div>
+    <div class="daily-grid" id="dailyGrid"></div>
+  </div>
+
+  <!-- 공통 업무 -->
+  <div class="view-panel" id="panel-etc" hidden>
+    <div id="etcContainer"></div>
+  </div>
+
+  <!-- 리포트 · 미팅 -->
+  <div class="view-panel" id="panel-report" hidden>
+    <div class="report-grid" id="reportGrid"></div>
+  </div>
+
+</div>
+
+<div class="toast-wrap">
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/sample-data.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
