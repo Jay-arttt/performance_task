@@ -265,7 +265,10 @@ function renderFlow() {
 // ── 보드 뷰 ───────────────────────────────
 function renderFlowBoard(ft, container) {
   container.className = 'flow-scroll';
-  container.innerHTML = '<div class="flow-board" id="flowBoardInner"></div>';
+  container.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <button class="modal-btn-save" onclick="openModal('bulk')" style="font-size:12px;padding:6px 16px;">+ 캠페인 일정 등록</button>
+  </div>
+  <div class="flow-board" id="flowBoardInner"></div>`;
   const board = container.querySelector('#flowBoardInner');
 
   FLOW_STEPS.forEach(step => {
