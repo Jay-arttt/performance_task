@@ -438,7 +438,8 @@ button { font-family: inherit; cursor: pointer; }
 .modal-title{font-size:14px;font-weight:600;color:var(--text-1);}
 .modal-close{background:none;border:none;font-size:16px;color:var(--text-3);cursor:pointer;padding:2px 6px;border-radius:4px;}
 .modal-close:hover{background:var(--surface2);color:var(--text-1);}
-.modal-body{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;flex:1;-webkit-overflow-scrolling:touch;}
+#modalForm{display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+.modal-body{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;-webkit-overflow-scrolling:touch;}
 .modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;}
 .modal-btn-cancel{font-size:13px;padding:7px 16px;border-radius:var(--radius-sm);border:1px solid var(--border-md);background:transparent;color:var(--text-2);cursor:pointer;font-family:inherit;}
 .modal-btn-cancel:hover{background:var(--surface2);}
@@ -507,7 +508,7 @@ button { font-family: inherit; cursor: pointer; }
   .report-grid{grid-template-columns:1fr 1fr;}
   .modal-box{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;max-height:95vh;}
   .modal-overlay{align-items:flex-end;padding:0;}
-  .modal-body{max-height:calc(95vh - 120px);}
+  .modal-body{max-height:none;}
   .date-range-wrap{flex-direction:column;gap:4px;}
   .date-range-sep{display:none;}
   .bulk-step-row{flex-wrap:wrap;gap:6px;}
