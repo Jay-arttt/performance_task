@@ -467,3 +467,92 @@ button { font-family: inherit; cursor: pointer; }
 .etc-card:hover .card-edit-btn{display:flex;}
 .report-card{position:relative;}
 .report-card:hover .card-edit-btn{display:flex;}
+
+/* ── 날짜 범위 필드 ── */
+.date-range-wrap{display:flex;align-items:center;gap:6px;}
+.date-range-wrap .field-input{flex:1;min-width:0;}
+.date-range-sep{font-size:13px;color:var(--color-text-tertiary);flex-shrink:0;}
+
+/* ── 일괄 등록 단계 행 ── */
+.bulk-step-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--color-background-secondary);border-radius:8px;flex-wrap:wrap;}
+.bulk-step-badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;min-width:68px;text-align:center;}
+.bulk-date-range{display:flex;align-items:center;gap:5px;flex:1;min-width:180px;}
+.bulk-date-range .field-input{flex:1;min-width:0;font-size:12px;padding:5px 8px;}
+.bulk-assignee{display:flex;gap:3px;flex-shrink:0;}
+.bulk-assignee .assignee-chip{padding:3px 7px 3px 4px;gap:4px;}
+.bulk-assignee .assignee-chip span{font-size:11px;}
+
+/* ── 내용·메모 미리보기 ── */
+.card-notes-preview{font-size:11px;color:var(--color-text-secondary);line-height:1.5;margin:5px 0;padding:6px 8px;background:var(--color-background-secondary);border-radius:6px;border-left:2px solid var(--color-border-secondary);white-space:pre-wrap;word-break:break-all;max-height:56px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+.field-textarea{resize:vertical;min-height:72px;line-height:1.6;}
+
+/* ── 반응형 모바일 ── */
+@media (max-width:768px){
+  .app-wrapper{padding:12px 12px 80px;}
+  .app-header{flex-direction:column;align-items:flex-start;gap:6px;}
+  .view-tabs{overflow-x:auto;scrollbar-width:none;}
+  .view-tabs::-webkit-scrollbar{display:none;}
+  .view-tab{padding:8px 12px;font-size:12px;}
+  .controls-bar{gap:8px;}
+  .ctrl-group{gap:4px;}
+  .ctrl-select{font-size:12px;padding:4px 6px;}
+  .view-toggle{display:none;} /* 모바일에선 뷰 전환 숨김, 보드 기본 */
+  .metrics-wrap{grid-template-columns:repeat(2,1fr);gap:6px;}
+  .metric{padding:8px 10px;}
+  .mval{font-size:16px;}
+  .flow-board{gap:6px;}
+  .flow-col{width:260px;}
+  .daily-grid{grid-template-columns:1fr;}
+  .etc-grid{grid-template-columns:1fr 1fr;}
+  .report-grid{grid-template-columns:1fr 1fr;}
+  .modal-box{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal-body{max-height:70vh;}
+  .date-range-wrap{flex-direction:column;gap:4px;}
+  .date-range-sep{display:none;}
+  .bulk-step-row{flex-wrap:wrap;gap:6px;}
+  .bulk-date-range{min-width:100%;order:2;}
+  .bulk-assignee{order:3;}
+}
+@media (max-width:480px){
+  .etc-grid{grid-template-columns:1fr;}
+  .report-grid{grid-template-columns:1fr;}
+  .flow-col{width:240px;}
+  .brand-tabs-wrap{font-size:11px;}
+  .btab{padding:5px 9px;font-size:11px;}
+  .card-title{font-size:12px;}
+}
+/* ── 모바일 하단 고정 추가 버튼 ── */
+.mobile-add-fab{display:none;}
+@media (max-width:768px){
+  .mobile-add-fab{
+    display:flex;align-items:center;justify-content:center;
+    position:fixed;bottom:20px;right:20px;
+    width:52px;height:52px;border-radius:50%;
+    background:var(--text-1);color:var(--surface);
+    font-size:24px;font-weight:300;
+    border:none;cursor:pointer;z-index:100;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+  }
+}
+
+/* ── 긴급 표시 ── */
+.urgent-card{border-color:#F09595 !important;background:#FFFAFA;}
+@media (prefers-color-scheme:dark){.urgent-card{background:#2A1818;border-color:#A32D2D !important;}}
+.urgent-tag{background:#FCEBEB;color:#791F1F;font-weight:600;}
+.card-urgent-btn{
+  display:none;position:absolute;top:6px;right:28px;
+  width:20px;height:20px;border-radius:50%;
+  background:transparent;border:1.5px solid var(--color-border-secondary);
+  font-size:12px;font-weight:700;cursor:pointer;
+  align-items:center;justify-content:center;
+  color:var(--color-text-tertiary);line-height:1;
+  transition:background .12s,color .12s,border-color .12s;
+}
+.task-card:hover .card-urgent-btn,
+.etc-card:hover .card-urgent-btn,
+.report-card:hover .card-urgent-btn{display:flex;}
+.card-urgent-btn.on{
+  display:flex;background:#FCEBEB;border-color:#F09595;color:#791F1F;
+}
+.card-urgent-btn:hover{background:#FCEBEB;border-color:#E24B4A;color:#E24B4A;}
