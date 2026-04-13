@@ -645,3 +645,10 @@ button { font-family: inherit; cursor: pointer; }
 .res-pinned-row{background:var(--color-background-warning) !important;}
 .res-pinned-row:hover{filter:brightness(.97);}
 .res-pin-indicator{font-size:11px;margin-right:4px;}
+
+/* ── 데일리 추가 메뉴 ── */
+.daily-menu-btn{display:block;width:100%;padding:8px 14px;text-align:left;font-size:13px;font-family:inherit;background:transparent;border:none;border-radius:8px;cursor:pointer;color:var(--color-text-primary);}
+.daily-menu-btn:hover{background:var(--color-background-secondary);}
+
+/* ── 데일리 카드 업무명 링크 ── */
+.daily-title-link:hover{color:var(--color-text-info);text-decoration:underline;}
