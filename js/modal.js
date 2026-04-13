@@ -271,6 +271,7 @@ async function submitBulk() {
       });
     }
     for (const row of allRows) {
+      console.log('전송 데이터:', JSON.stringify(row)); // 디버그
       const result = await callAppsScript({ action: 'add', sheetName: 'campaign', row });
       row.id = result.id;
       addToLocalDB('campaign', row);
@@ -492,6 +493,9 @@ async function submitModal(mode, sheetName, task) {
 function addToLocalDB(sheetName, row) {
   const key = {campaign:'campaign',common:'common',report:'report'}[sheetName];
   if (!key) return;
+  // brand, assignee 등 텍스트 필드 문자열 보장
+  if (row.brand)    row.brand    = String(row.brand);
+  if (row.assignee) row.assignee = String(row.assignee);
   DB[key].push({...row, id:Number(row.id), hasBid:row.hasBid==='TRUE'||row.hasBid===true, done:row.done==='TRUE'||row.done===true});
 }
 function updateLocalDB(sheetName, id, row) {
