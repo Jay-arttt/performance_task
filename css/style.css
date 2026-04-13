@@ -656,3 +656,23 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ── 데일리 카드 업무명 링크 ── */
 .daily-title-link:hover{color:var(--color-text-info);text-decoration:underline;}
+
+/* ── 리스트 인라인 편집 ── */
+.list-edit-cell:hover{background:var(--color-background-secondary);}
+.list-inline-editor{box-shadow:0 4px 16px rgba(0,0,0,.12);}
+
+/* ── 데일리 드래그 ── */
+.daily-card{cursor:grab;}
+.daily-card:active{cursor:grabbing;}
+.daily-card.dragging{opacity:.3;}
+.daily-col.daily-drag-over{background:var(--color-background-info);outline:2px dashed var(--color-border-info);outline-offset:-2px;border-radius:var(--radius-md);}
+
+/* ── 날짜 퀵 버튼 ── */
+.date-quick-btn{font-size:11px;padding:3px 10px;border-radius:20px;border:.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer;font-family:inherit;transition:background .1s,color .1s,border-color .1s;}
+.date-quick-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary);}
+.date-quick-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+
+/* ── 완료 토글 버튼 ── */
+.completed-toggle{font-size:11px;padding:5px 12px;border-radius:20px;border:.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-tertiary);cursor:pointer;font-family:inherit;transition:all .12s;}
+.completed-toggle:hover{color:var(--color-text-primary);border-color:var(--color-border-primary);}
+.completed-toggle.on{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-primary);}
