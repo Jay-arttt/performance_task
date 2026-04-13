@@ -53,10 +53,16 @@ const SheetsAPI = (() => {
       const obj = {};
       headers.forEach((h, i) => {
         const val = row[i] ?? '';
-        if      (val === 'TRUE')              obj[h] = true;
-        else if (val === 'FALSE')             obj[h] = false;
-        else if (h === 'id' && val !== '')    obj[h] = Number(val);
-        else                                  obj[h] = val;
+        if      (val === 'TRUE')                         obj[h] = true;
+        else if (val === 'FALSE')                        obj[h] = false;
+        else if (h === 'id' && val !== '')               obj[h] = Number(val);
+        // brand, assignee 등 텍스트 컬럼은 항상 문자열로
+        else if (h === 'brand' || h === 'assignee' ||
+                 h === 'media' || h === 'step'    ||
+                 h === 'status'|| h === 'category'||
+                 h === 'type'  || h === 'repeat'  ||
+                 h === 'priority')                       obj[h] = String(val);
+        else                                             obj[h] = val;
       });
       return obj;
     });
@@ -108,25 +114,20 @@ const SheetsAPI = (() => {
 let DB = { campaign:[], common:[], report:[], brands:[], members:[], resources:[] };
 
 async function initData() {
-  if (USE_SAMPLE_DATA) {
-    DB = { ...SAMPLE };
-    console.info('[Dashboard] 샘플 데이터로 실행 중');
-    return;
-  }
   try {
     DB = await SheetsAPI.loadAll();
   } catch (e) {
-    console.warn('[Dashboard] Sheets 로드 실패, 샘플 데이터로 대체:', e.message);
-    DB = { ...SAMPLE };
+    console.warn('[Dashboard] Sheets 로드 실패:', e.message);
+    DB = { campaign:[], common:[], report:[], brands:[], members:[], resources:[] };
   }
 }
 
 // ── 자동 새로고침 ─────────────────────────
 function startAutoRefresh() {
-  if (!CONFIG.REFRESH_INTERVAL || USE_SAMPLE_DATA) return;
+  if (!CONFIG.REFRESH_INTERVAL) return;
   setInterval(async () => {
     try {
-      DB = await SheetsAPI.loadAll(true); // 캐시 무시하고 강제 갱신
+      DB = await SheetsAPI.loadAll(true);
       renderCurrentView();
     } catch (e) { /* silent */ }
   }, CONFIG.REFRESH_INTERVAL);

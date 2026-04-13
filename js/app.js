@@ -86,8 +86,18 @@ function renderAvatars(assigneeStr, size = 22) {
 }
 
 // ── 브랜드 유틸 ───────────────────────────
-function brandColor(id) { const b = DB.brands.find(b => b.id === id); return b ? b.color : '#888780'; }
-function brandLabel(id) { const b = DB.brands.find(b => b.id === id); return b ? b.label : id; }
+function brandColor(id) {
+  if (!id) return '#888780';
+  const s = String(id).trim();
+  const b = DB.brands.find(b => b.id === s || b.label === s);
+  return b ? b.color : '#888780';
+}
+function brandLabel(id) {
+  if (!id) return String(id || '');
+  const s = String(id).trim();
+  const b = DB.brands.find(b => b.id === s || b.label === s);
+  return b ? b.label : s;
+}
 
 // ── 기한 유틸 ─────────────────────────────
 function dueInfo(ds) {
@@ -339,7 +349,7 @@ function makeCampaignCard(t) {
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
       <div style="display:flex;">${renderAvatars(t.assignee)}</div>
-      <span class="due-badge ${due.cls}">${isLive ? '' : due.label}</span>
+      ${!isLive ? `<span class="due-badge ${due.cls}" style="${t.status==='완료'?'display:none;':''}">${due.label}</span>` : ''}
       ${!isLive ? `<label class="done-check campaign-done-check" title="${t.status === '완료' ? '완료 취소' : '완료 체크'}">
         <input type="checkbox" ${t.status === '완료' ? 'checked' : ''} data-id="${t.id}">
         <span class="check-box">${t.status === '완료' ? '✓' : ''}</span>
@@ -355,6 +365,9 @@ function makeCampaignCard(t) {
   el.querySelector('.campaign-done-check input')?.addEventListener('change', async e => {
     e.stopPropagation();
     const newStatus = e.target.checked ? '완료' : '진행중';
+    // DB에서 원본 task 찾아서 업데이트 (t는 클로저 참조라 직접 수정)
+    const taskInDB = DB.campaign.find(x => String(x.id) === String(t.id));
+    if (taskInDB) taskInDB.status = newStatus;
     t.status = newStatus;
     try {
       await callAppsScript({ action: 'update', sheetName: 'campaign', id: t.id, row: { status: newStatus } });
@@ -535,7 +548,11 @@ function renderFlowGantt(ft, container) {
     if (start) start.setHours(0,0,0,0);
     if (end)   end.setHours(0,0,0,0);
 
-    const cells = dates.map((d) => {
+    // 바 범위 길이 계산 (텍스트 표시 여부 결정)
+    const barDays = (start && end) ? Math.round((end - start) / 86400000) + 1 : 0;
+    const showLabel = barDays >= 3; // 3일 이상일 때만 텍스트 표시
+
+    const cells = dates.map((d, di) => {
       const isToday   = sameDay(d, TODAY);
       const isWeekend = d.getDay()===0||d.getDay()===6;
       const bgBase    = isToday ? 'background:var(--color-background-info);' : isWeekend ? 'background:var(--color-background-secondary);' : '';
@@ -544,8 +561,14 @@ function renderFlowGantt(ft, container) {
       if (!inRange) return `<td style="${bgBase}"></td>`;
       const isStart = sameDay(d, start);
       const isEnd   = sameDay(d, end);
-      const barStyle = `background:${stepColor};height:16px;margin:3px 1px;border-radius:${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'};`;
-      return `<td style="${bgBase}padding:0;"><div style="${barStyle}"></div></td>`;
+      // 바 중앙 셀에 단계 텍스트 표시
+      const midDate = new Date(start.getTime() + (end.getTime() - start.getTime()) / 2);
+      midDate.setHours(0,0,0,0);
+      const isMid = showLabel && sameDay(d, midDate);
+      const radius = `${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
+      const barStyle = `background:${stepColor};height:20px;margin:2px 1px;border-radius:${radius};display:flex;align-items:center;justify-content:center;overflow:hidden;`;
+      const label = isMid ? `<span style="font-size:9px;font-weight:600;color:white;white-space:nowrap;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none;">${t.step}</span>` : '';
+      return `<td style="${bgBase}padding:0;"><div style="${barStyle}">${label}</div></td>`;
     }).join('');
 
     const due = dueInfo(t.due);
@@ -713,7 +736,7 @@ function makeEtcCard(t, style) {
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
       <div style="display:flex;">${renderAvatars(t.assignee, 20)}</div>
-      <span class="due-badge ${due.cls}">${due.label}</span>
+      <span class="due-badge ${due.cls}" style="${t.done?'display:none;':''}">${due.label}</span>
       <label class="done-check"><input type="checkbox" ${t.done?'checked':''} data-id="${t.id}"><span class="check-box">${t.done?'✓':''}</span></label>
     </div>`;
   el.querySelector('.card-edit-btn').addEventListener('click', e => {
@@ -787,7 +810,7 @@ function makeReportCard(t) {
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
       <div style="display:flex;">${renderAvatars(t.assignee, 20)}</div>
-      <span class="due-badge ${due.cls}">${due.label}</span>
+      <span class="due-badge ${due.cls}" style="${t.done?'display:none;':''}">${due.label}</span>
       <label class="done-check"><input type="checkbox" ${t.done?'checked':''} data-id="${t.id}"><span class="check-box">${t.done?'✓':''}</span></label>
     </div>`;
   el.querySelector('.card-edit-btn').addEventListener('click', e => {
@@ -855,14 +878,20 @@ function bindEvents() {
 async function main() {
   document.getElementById('loadingOverlay').style.display = 'flex';
   await initData();
-  generateRecurringTasks(); // 반복 업무 자동 생성
+  generateRecurringTasks();
   bindEvents();
-  renderFlow();
+  // 데일리 업무 탭으로 시작
+  state.view = 'daily';
+  document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-view="daily"]')?.classList.add('active');
+  document.querySelectorAll('.view-panel').forEach(p => p.hidden = true);
+  document.getElementById('panel-daily').hidden = false;
+  renderDaily();
   document.getElementById('loadingOverlay').style.display = 'none';
   startAutoRefresh();
   const badge = document.getElementById('syncBadge');
-  badge.textContent = USE_SAMPLE_DATA ? '샘플 데이터' : 'Sheets 연동됨';
-  badge.className = USE_SAMPLE_DATA ? 'sync-badge sample' : 'sync-badge live';
+  badge.textContent = 'Sheets 연동됨';
+  badge.className = 'sync-badge live';
 }
 
 document.addEventListener('DOMContentLoaded', main);
