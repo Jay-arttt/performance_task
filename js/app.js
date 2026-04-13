@@ -284,7 +284,7 @@ function renderFlowBoard(ft, container) {
     colTasks.forEach(t => col.appendChild(makeCampaignCard(t)));
     const addBtn = document.createElement('button');
     addBtn.className = 'add-btn'; addBtn.textContent = '+ 추가';
-    addBtn.addEventListener('click', () => showToast('Sheets에서 업무를 추가해주세요'));
+    addBtn.addEventListener('click', () => openModal('add', 'campaign'));
     col.appendChild(addBtn);
     setupDropTarget(col, addBtn, step);
     board.appendChild(col);
@@ -303,6 +303,7 @@ function makeCampaignCard(t) {
   el.dataset.id = t.id; el.draggable = true;
 
   el.innerHTML = `
+    <button class="card-edit-btn" title="수정">✎</button>
     <div class="card-brand-bar" style="background:${brandColor(t.brand)}"></div>
     <div class="card-title">${t.title}</div>
     <div class="card-tags">
@@ -316,6 +317,10 @@ function makeCampaignCard(t) {
       <div style="display:flex;">${renderAvatars(t.assignee)}</div>
       <span class="due-badge ${due.cls}">${isLive ? '' : due.label}</span>
     </div>`;
+  el.querySelector('.card-edit-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    openModal('edit', 'campaign', t);
+  });
 
   el.addEventListener('dragstart', e => { state.dragId = t.id; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
   el.addEventListener('dragend', () => { el.classList.remove('dragging'); removePH(); document.querySelectorAll('.flow-col').forEach(c => c.classList.remove('drag-over')); });
@@ -578,6 +583,12 @@ function renderEtc() {
   const container = document.getElementById('etcContainer');
   container.innerHTML = '';
 
+  // 추가 버튼
+  const addBar = document.createElement('div');
+  addBar.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:12px;';
+  addBar.innerHTML = `<button class="modal-btn-save" onclick="openModal('add','common')" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>`;
+  container.appendChild(addBar);
+
   Object.entries(ETC_TYPES).forEach(([typeName, style]) => {
     const group = filtered.filter(t => t.type === typeName);
     if (!group.length) return;
@@ -596,6 +607,7 @@ function makeEtcCard(t, style) {
   const el = document.createElement('div');
   el.className = 'etc-card' + (t.done ? ' done-card' : '');
   el.innerHTML = `
+    <button class="card-edit-btn" title="수정">✎</button>
     <div class="etc-card-icon" style="background:${style.bg};color:${style.c}">${style.icon}</div>
     <div class="card-title">${t.title}</div>
     ${ms ? `<div class="card-tags"><span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span></div>` : ''}
@@ -605,6 +617,10 @@ function makeEtcCard(t, style) {
       <span class="due-badge ${due.cls}">${due.label}</span>
       <label class="done-check"><input type="checkbox" ${t.done?'checked':''} data-id="${t.id}"><span class="check-box">${t.done?'✓':''}</span></label>
     </div>`;
+  el.querySelector('.card-edit-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    openModal('edit', 'common', t);
+  });
   el.querySelector('input').addEventListener('change', e => {
     const task = DB.common.find(x => x.id === Number(e.target.dataset.id));
     if (task) { task.done = e.target.checked; renderEtc(); showToast(task.done ? `"${task.title}" 완료` : `"${task.title}" 취소`); }
@@ -635,6 +651,12 @@ function renderReport() {
   renderMetrics(filtered, 'report');
   const grid = document.getElementById('reportGrid');
   grid.innerHTML = '';
+
+  // 추가 버튼
+  const addBar = document.createElement('div');
+  addBar.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:12px;grid-column:1/-1;';
+  addBar.innerHTML = `<button class="modal-btn-save" onclick="openModal('add','report')" style="font-size:12px;padding:6px 14px;">+ 리포트 추가</button>`;
+  grid.appendChild(addBar);
   filtered.forEach(t => grid.appendChild(makeReportCard(t)));
 }
 
@@ -644,6 +666,7 @@ function makeReportCard(t) {
   const el = document.createElement('div');
   el.className = 'report-card' + (t.done ? ' done-card' : '');
   el.innerHTML = `
+    <button class="card-edit-btn" title="수정">✎</button>
     <div class="report-card-top">
       <div class="report-icon" style="background:${rs.bg};color:${rs.c}">${t.type[0]}</div>
       <div><div class="report-brand" style="color:${brandColor(t.brand)}">${brandLabel(t.brand)}</div><div class="report-type">${t.type}</div></div>
@@ -655,6 +678,10 @@ function makeReportCard(t) {
       <span class="due-badge ${due.cls}">${due.label}</span>
       <label class="done-check"><input type="checkbox" ${t.done?'checked':''} data-id="${t.id}"><span class="check-box">${t.done?'✓':''}</span></label>
     </div>`;
+  el.querySelector('.card-edit-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    openModal('edit', 'report', t);
+  });
   el.querySelector('input').addEventListener('change', e => {
     const task = DB.report.find(x => x.id === Number(e.target.dataset.id));
     if (task) { task.done = e.target.checked; renderReport(); showToast(task.done ? `"${task.title}" 완료` : `"${task.title}" 취소`); }
