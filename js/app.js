@@ -38,7 +38,8 @@ const REPORT_STYLE = {
   '미팅':   { bg: '#FAEEDA', c: '#633806' },
 };
 
-const TODAY = new Date();
+// 한국 서울 시간 기준 오늘
+const TODAY = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }));
 TODAY.setHours(0,0,0,0);
 
 // ── 상태 ──────────────────────────────────
@@ -612,6 +613,22 @@ function renderDaily() {
 
   const days = ['일','월','화','수','목','금','토'];
   document.getElementById('dailyDateLabel').textContent = fmtDate(state.viewDate);
+
+  // 담당자 필터 + 추가 버튼
+  const members = getActiveMembers();
+  document.getElementById('memberFilterWrap').innerHTML = `
+    <label class="ctrl-label">담당자</label>
+    <select class="ctrl-select" id="selMemberDaily">
+      <option value="all">전체</option>
+      ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
+    </select>
+    <div style="margin-left:auto;display:flex;gap:6px;">
+      <button class="modal-btn-save" id="dailyAddBtn" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+    </div>`;
+
+  document.getElementById('selMemberDaily')?.addEventListener('change', e => { state.member = e.target.value; renderDaily(); });
+  document.getElementById('dailyAddBtn')?.addEventListener('click', () => openDailyAddMenu());
+
   const grid = document.getElementById('dailyGrid');
   grid.innerHTML = '';
 
@@ -662,7 +679,7 @@ function makeDailyCard(t) {
   el.className = 'daily-card' + (isLive ? ' live-card' : '');
   el.innerHTML = `
     <div class="card-brand-bar" style="background:${t.brand ? brandColor(t.brand) : '#888780'}"></div>
-    <div class="card-title">${t.title}</div>
+    <div class="card-title daily-title-link" style="cursor:pointer;">${t.title}</div>
     <div class="card-tags">
       ${t.brand ? `<span style="font-size:10px;font-weight:500;color:${brandColor(t.brand)}">${brandLabel(t.brand)}</span>` : '<span class="tag brand-tag">공통</span>'}
       ${rs ? `<span class="tag" style="background:${rs.bg};color:${rs.c}">${t.type}</span>` : ''}
@@ -675,11 +692,52 @@ function makeDailyCard(t) {
       <span class="due-badge ${due.cls}">${isLive ? '운영중' : due.label}</span>
       <span class="step-label">${stepLabel}</span>
     </div>`;
+
+  // 업무명 클릭 → 수정 모달
+  el.querySelector('.daily-title-link').addEventListener('click', () => {
+    const sheetName = t._src === 'campaign' ? 'campaign' : t._src === 'common' ? 'common' : 'report';
+    const original  = DB[sheetName === 'campaign' ? 'campaign' : sheetName === 'common' ? 'common' : 'report']
+                      .find(x => String(x.id) === String(t.id));
+    if (original) openModal('edit', sheetName, original);
+  });
+
   return el;
 }
 
+// ── 데일리 업무 추가 메뉴 ─────────────────
+function openDailyAddMenu() {
+  const existing = document.getElementById('dailyAddMenu');
+  if (existing) { existing.remove(); return; }
+
+  const btn = document.getElementById('dailyAddBtn');
+  const rect = btn.getBoundingClientRect();
+
+  const menu = document.createElement('div');
+  menu.id = 'dailyAddMenu';
+  menu.style.cssText = `position:fixed;top:${rect.bottom + 4}px;right:${window.innerWidth - rect.right}px;background:var(--color-background-primary);border:.5px solid var(--color-border-secondary);border-radius:10px;padding:4px;z-index:200;min-width:150px;`;
+  menu.innerHTML = `
+    <button class="daily-menu-btn" id="dmBtn1">브랜드 업무</button>
+    <button class="daily-menu-btn" id="dmBtn2">기타 업무</button>
+    <button class="daily-menu-btn" id="dmBtn3">리포트</button>`;
+
+  document.body.appendChild(menu);
+
+  menu.querySelector('#dmBtn1').addEventListener('click', () => { menu.remove(); openModal('bulk'); });
+  menu.querySelector('#dmBtn2').addEventListener('click', () => { menu.remove(); openModal('add', 'common'); });
+  menu.querySelector('#dmBtn3').addEventListener('click', () => { menu.remove(); openModal('add', 'report'); });
+
+  // 외부 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!menu.contains(e.target) && e.target !== btn) {
+        menu.remove();
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 0);
+}
+
 // ──────────────────────────────────────────
-//  뷰 3: 공통 업무
 // ──────────────────────────────────────────
 function renderEtc() {
   document.getElementById('brandTabsWrap').innerHTML = '';

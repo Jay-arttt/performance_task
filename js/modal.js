@@ -17,15 +17,16 @@ async function callAppsScript(payload) {
   return json;
 }
 
-// ── 날짜 헬퍼 ─────────────────────────────
+// ── 날짜 헬퍼 (한국 서울 시간 기준) ─────────
+function todayStr() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+}
 function nextDay(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  // 날짜 문자열을 직접 조작해서 타임존 오류 방지
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d + 1);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
 // ── 모달 열기 ─────────────────────────────
@@ -100,12 +101,14 @@ function buildBulkModalHTML() {
 
   const stepRows = FLOW_STEPS_BULK.map((step, i) => {
     const s = STEP_STYLE[step];
+    const defaultStart = i === 0 ? todayStr() : '';
+    const defaultEnd   = i === 0 ? todayStr() : '';
     return `<div class="bulk-step-row" data-step="${step}" data-idx="${i}">
       <span class="bulk-step-badge" style="background:${s.bg};color:${s.c};">${step}</span>
       <div class="bulk-date-range">
-        <input type="date" class="field-input bulk-start" style="font-size:12px;padding:5px 8px;" data-idx="${i}" placeholder="시작일">
+        <input type="date" class="field-input bulk-start" style="font-size:12px;padding:5px 8px;" data-idx="${i}" value="${defaultStart}" placeholder="시작일">
         <span style="font-size:11px;color:var(--color-text-tertiary);flex-shrink:0;">~</span>
-        <input type="date" class="field-input bulk-end" style="font-size:12px;padding:5px 8px;" data-idx="${i}" placeholder="기한">
+        <input type="date" class="field-input bulk-end" style="font-size:12px;padding:5px 8px;" data-idx="${i}" value="${defaultEnd}" placeholder="기한">
       </div>
       <div class="assignee-picker bulk-assignee" data-idx="${i}">${memberChips()}</div>
     </div>`;
@@ -217,15 +220,26 @@ function initBulkModal() {
 }
 
 function updateBulkCount() {
-  const mediaCount = document.querySelectorAll('#bulkMediaPicker .assignee-chip.checked').length;
-  const label = document.getElementById('bulkCountLabel');
-  if (!mediaCount) {
-    label.innerHTML = '매체를 선택해주세요';
-  } else {
-    const cardCount = mediaCount * (FLOW_STEPS_BULK.length + 1);
-    label.innerHTML = `저장 시 카드 <span style="color:var(--color-text-success);font-weight:500;">${cardCount}개</span> 생성`;
-  }
+  const selected = [...document.querySelectorAll('#bulkMediaPicker .assignee-chip.checked')].map(c => c.dataset.media);
+  const label    = document.getElementById('bulkCountLabel');
+  if (!selected.length) { label.innerHTML = '매체를 선택해주세요'; return; }
+
+  let total = 0;
+  selected.forEach((media, idx) => {
+    const isSA     = SA_MEDIA.includes(media);
+    const isSearch = SEARCH_MEDIA.includes(media);
+    if (isSearch) total += 3; // 소재등록·소재검수·Live
+    else if (selected.length > 1 && !isSA && idx > 0) total += 3; // 소재등록·소재검수·Live
+    else total += 5; // 전체 단계
+  });
+
+  label.innerHTML = `저장 시 카드 <span style="color:var(--color-text-success);font-weight:500;">${total}개</span> 생성`;
 }
+
+// SA 매체 — 항상 소재기획부터 시작
+const SA_MEDIA     = ['네이버 BSA', '네이버 PL'];
+// 쇼검 — 소재등록부터 시작
+const SEARCH_MEDIA = ['네이버 쇼검'];
 
 async function submitBulk() {
   const brand        = document.getElementById('bulkBrand').value;
@@ -249,19 +263,42 @@ async function submitBulk() {
 
   try {
     const allRows = [];
-    for (const media of selectedMedia) {
+    const multiMedia = selectedMedia.length > 1; // 매체 2개 이상 여부
+
+    selectedMedia.forEach((media, mediaIdx) => {
       const titleWithMedia = `${baseTitle} · ${media}`;
-      const isBid = ['네이버 PL','네이버 쇼검'].includes(media);
-      for (let i = 0; i < FLOW_STEPS_BULK.length; i++) {
+      const isBid          = ['네이버 PL','네이버 쇼검'].includes(media);
+      const isSA           = SA_MEDIA.includes(media);
+      const isSearch       = SEARCH_MEDIA.includes(media);
+
+      // 이 매체에서 생성할 단계 결정
+      let steps;
+      if (isSearch) {
+        // 네이버 쇼검: 소재등록·소재검수·Live
+        steps = ['소재등록','소재검수'];
+      } else if (multiMedia && !isSA && mediaIdx > 0) {
+        // 2번째 이상 일반 매체: 소재등록·소재검수·Live (기획·제작 건너뜀)
+        steps = ['소재등록','소재검수'];
+      } else {
+        // 첫 번째 매체 or SA 매체: 전체 단계
+        steps = FLOW_STEPS_BULK; // ['소재기획','소재제작','소재등록','소재검수']
+      }
+
+      // 단계별 날짜 인덱스 매핑 (FLOW_STEPS_BULK 기준)
+      steps.forEach(step => {
+        const stepIdx = FLOW_STEPS_BULK.indexOf(step);
         allRows.push({
           brand, title: titleWithMedia, priority,
-          step: FLOW_STEPS_BULK[i], status: '진행중',
+          step, status: '진행중',
           media, hasBid: isBid ? 'TRUE' : 'FALSE',
-          assignee: stepAssignees[i] || '',
-          startDate: starts[i] || '', due: ends[i],
+          assignee: stepAssignees[stepIdx] || stepAssignees[0] || '',
+          startDate: starts[stepIdx] || '',
+          due: ends[stepIdx] || '',
           notes, driveUrl: '', driveLabel: '',
         });
-      }
+      });
+
+      // Live 단계 항상 추가
       allRows.push({
         brand, title: titleWithMedia, priority,
         step: 'Live', status: '진행중',
@@ -270,7 +307,8 @@ async function submitBulk() {
         startDate: '', due: '',
         notes, driveUrl: '', driveLabel: '',
       });
-    }
+    });
+
     for (const row of allRows) {
       console.log('전송 데이터:', JSON.stringify(row)); // 디버그
       const result = await callAppsScript({ action: 'add', sheetName: 'campaign', row });
@@ -379,6 +417,8 @@ function fieldSelect(name, label, options, selected = '', required = false) {
   </div>`;
 }
 function fieldDateRange(startName, endName, label, startVal = '', endVal = '', required = false) {
+  const today = todayStr();
+  const defaultEnd = endVal || today;
   return `<div class="field-group">
     <label class="field-label">${label}${required ? '<span class="field-required">*</span>' : ''}
       <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">시작일 생략 시 하루짜리 업무로 처리</span>
@@ -386,7 +426,7 @@ function fieldDateRange(startName, endName, label, startVal = '', endVal = '', r
     <div class="date-range-wrap">
       <input class="field-input date-range-start" type="date" name="${startName}" value="${startVal}" placeholder="시작일 (선택)">
       <span class="date-range-sep">~</span>
-      <input class="field-input date-range-end" type="date" name="${endName}" value="${endVal}" ${required?'required':''} placeholder="기한">
+      <input class="field-input date-range-end" type="date" name="${endName}" value="${defaultEnd}" ${required?'required':''} placeholder="기한">
     </div>
   </div>`;
 }

@@ -84,11 +84,10 @@ function renderResources() {
           <tr>
             <th style="width:28px;"></th>
             <th class="res-th-sort" data-key="category">카테고리</th>
-            <th class="res-th-sort" data-key="title">제목</th>
+            <th class="res-th-sort" data-key="title">제목 <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;">클릭하면 수정</span></th>
             <th>설명</th>
             <th>링크</th>
             <th class="res-th-sort" data-key="updatedAt">업데이트</th>
-            <th style="width:52px;"></th>
           </tr>
         </thead>
         <tbody id="resTbody"></tbody>
@@ -158,7 +157,7 @@ function renderResTable() {
     tr.className   = isPinned ? 'res-pinned-row' : '';
 
     tr.innerHTML = `
-      <td>
+      <td style="width:28px;text-align:center;">
         <button class="res-pin-btn ${isPinned ? 'pinned' : ''}" data-id="${r.id}" title="${isPinned ? '핀 해제' : '핀 고정'}">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="${isPinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
@@ -167,7 +166,7 @@ function renderResTable() {
       </td>
       <td><span class="res-cat-badge" style="background:${cs.bg};color:${cs.c};">${r.category}</span></td>
       <td>
-        <span class="res-title-link" data-id="${r.id}">
+        <span class="res-title-link" data-id="${r.id}" title="클릭하면 수정">
           ${isPinned ? '<span class="res-pin-indicator">📌</span>' : ''}${r.title}
         </span>
       </td>
@@ -178,8 +177,7 @@ function renderResTable() {
            </a>`
         : `<span style="font-size:10px;color:var(--color-text-tertiary);">링크없음</span>`}
       </td>
-      <td style="font-size:11px;color:var(--color-text-tertiary);white-space:nowrap;">${r.updatedAt || ''}</td>
-      <td><button class="res-edit-btn" data-id="${r.id}">수정</button></td>`;
+      <td style="font-size:11px;color:var(--color-text-tertiary);white-space:nowrap;">${r.updatedAt || ''}</td>`;
 
     // 핀 버튼
     tr.querySelector('.res-pin-btn').addEventListener('click', async e => {
@@ -200,12 +198,6 @@ function renderResTable() {
 
     // 제목 클릭 → 수정 모달
     tr.querySelector('.res-title-link').addEventListener('click', () => {
-      const res = getResources().find(x => String(x.id) === String(r.id));
-      if (res) openResourceModal(res);
-    });
-
-    // 수정 버튼
-    tr.querySelector('.res-edit-btn').addEventListener('click', () => {
       const res = getResources().find(x => String(x.id) === String(r.id));
       if (res) openResourceModal(res);
     });
