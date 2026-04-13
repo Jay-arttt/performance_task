@@ -238,7 +238,7 @@ function openResourceModal(resource = null) {
       <span class="modal-title">${isEdit ? '자료 수정' : '자료 추가'}</span>
       <button class="modal-close">✕</button>
     </div>
-    <form id="resourceForm" autocomplete="off">
+    <form id="resourceForm" autocomplete="off" style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
       <div class="modal-body">
         <div class="field-group">
           <label class="field-label">카테고리<span class="field-required">*</span></label>

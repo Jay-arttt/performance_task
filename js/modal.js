@@ -346,7 +346,7 @@ function buildModalHTML(mode, sheetName, task) {
       <span class="modal-title">${isEdit ? '업무 수정' : '업무 추가'}</span>
       <button class="modal-close">✕</button>
     </div>
-    <form id="modalForm" autocomplete="off">
+    <form id="modalForm" autocomplete="off" style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
       <div class="modal-body">${fields}</div>
       <div class="modal-footer">
         <button type="button" class="modal-btn-cancel" onclick="closeModal()">취소</button>
