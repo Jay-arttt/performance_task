@@ -55,7 +55,11 @@ const SheetsAPI = (() => {
         const val = row[i] ?? '';
         if      (val === 'TRUE')                         obj[h] = true;
         else if (val === 'FALSE')                        obj[h] = false;
-        else if (h === 'id' && val !== '')               obj[h] = Number(val);
+        // id는 숫자면 숫자로, 문자열이면 문자열로 (브랜드마스터는 문자열 id)
+        else if (h === 'id' && val !== '') {
+          const n = Number(val);
+          obj[h] = isNaN(n) ? String(val) : n;
+        }
         // brand, assignee 등 텍스트 컬럼은 항상 문자열로
         else if (h === 'brand' || h === 'assignee' ||
                  h === 'media' || h === 'step'    ||

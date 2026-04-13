@@ -68,7 +68,7 @@ function closeModal() {
 // ──────────────────────────────────────────
 function buildBulkModalHTML() {
   const members = getActiveMembers();
-  const brands  = DB.brands;
+  const brands  = DB.brands.filter(b => b.id && String(b.id) !== 'NaN' && b.label);
 
   const brandOpts = brands.map(b =>
     `<option value="${b.id}">${b.label}</option>`
@@ -292,7 +292,7 @@ async function submitBulk() {
 function buildModalHTML(mode, sheetName, task) {
   const isEdit  = mode === 'edit';
   const members = getActiveMembers();
-  const brands  = DB.brands;
+  const brands  = DB.brands.filter(b => b.id && String(b.id) !== 'NaN' && b.label);
   const v = (key, fallback = '') => task ? (task[key] ?? fallback) : fallback;
 
   const priorityField = `${fieldSelect('priority', '우선순위',
