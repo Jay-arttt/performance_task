@@ -11,7 +11,7 @@ const CONFIG = {
   // Spreadsheet ID (Sheets URL에서 /d/ 뒤 문자열)
   // 예: https://docs.google.com/spreadsheets/d/[이부분]/edit
   SPREADSHEET_ID: '1DL-qfAUbym0biC2Xm6zaXrN1A1B9XzW1SFUhxuIDcLo',
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyUql97EuQ-_cOSzId7XqRQtGYTqIc8Yh0B-lhxunIvB2uOnTs6uaNCXu_qobpyf6APRQ/exec',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyyY4YMzGzvh8SEuWQwEXR8JRYXiQFufl4WDlzgFUoC_bdkS7cH26uEOulE5Zw9MQPxzQ/exec',
 
   // 시트 이름 (Sheets 하단 탭 이름과 정확히 일치해야 함)
   SHEETS: {
