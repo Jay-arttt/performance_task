@@ -673,9 +673,9 @@ button { font-family: inherit; cursor: pointer; }
 .date-quick-btn.active{background:#185FA5;color:#fff;border-color:#185FA5;}
 
 /* ── 완료 토글 버튼 ── */
-.completed-toggle{font-size:12px;padding:5px 12px;border-radius:8px;border:1.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-tertiary);cursor:pointer;font-family:inherit;font-weight:500;transition:all .12s;}
-.completed-toggle:hover{border-color:var(--color-border-primary);color:var(--color-text-primary);}
-.completed-toggle.on{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+.completed-toggle{font-size:12px;padding:5px 14px;border-radius:8px;border:1.5px solid #C0BEBB;background:#fff;color:#888780;cursor:pointer;font-family:inherit;font-weight:500;transition:all .12s;white-space:nowrap;}
+.completed-toggle:hover{border-color:#888780;color:#1A1917;}
+.completed-toggle.on{background:#1A1917;color:#fff;border-color:#1A1917;}
 
 /* ── 주간 뷰 ── */
 .week-col .daily-col-header{padding:8px 10px;justify-content:center;}
