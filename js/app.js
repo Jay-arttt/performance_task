@@ -295,10 +295,12 @@ function renderFlowControls() {
         </select>
       </div>
       <div class="ctrl-spacer"></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggle">완료</button>
+        <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggle">숨김</button>
+      </div>
+      <div style="width:.5px;height:20px;background:var(--color-border-secondary);margin:0 4px;"></div>
       <div class="view-toggle">
-        <button class="vbtn ${state.showCompleted?'active':''}" id="completedToggle" title="완료 업무 표시">완료</button>
-        <button class="vbtn ${state.showHidden?'active':''}" id="hiddenToggle" title="숨김 업무 표시">숨김</button>
-        <div style="width:.5px;background:var(--color-border-tertiary);margin:4px 2px;"></div>
         <button class="vbtn ${state.flowView==='board'?'active':''}" data-flowview="board">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
           보드
@@ -447,7 +449,7 @@ function makeCampaignCard(t) {
     <div class="card-title">${t.title}</div>
     <div class="card-tags">
       ${isUrgent ? `<span class="tag urgent-tag">긴급</span>` : ''}
-      ${!isLive ? `<span class="tag" style="background:${ss.bg};color:${ss.c}">${t.status}</span>` : ''}
+      ${t.status === '컨펌대기' ? `<span class="tag" style="background:${ss.bg};color:${ss.c}">컨펌대기</span>` : ''}
       ${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : ''}
       ${isBid ? `<span class="tag bid-tag">입찰가</span>` : ''}
       ${state.brand === 'all' ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : ''}
