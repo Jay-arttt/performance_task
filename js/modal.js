@@ -408,6 +408,8 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
       ${fieldText('driveLabel', '파일명', v('driveLabel'))}`;
+
+  } else if (sheetName === 'report') {
     fields = `
       ${fieldSelect('brand', '브랜드', brands.map(b => ({value:b.id,label:b.label})), v('brand'), true)}
       ${fieldSelect('type', '유형', ['데일리','주간','분기','미팅'].map(s => ({value:s,label:s})), v('type','데일리'), true)}

@@ -745,12 +745,13 @@ function renderFlowGantt(ft, container) {
     </thead>
     <tbody>`;
 
-  const sorted  = [...ft].filter(t => t.startDate).sort((a,b) => new Date(a.startDate)-new Date(b.startDate));
-  const noDate  = ft.filter(t => !t.startDate);
-  // Live는 날짜 없어도 표시 — sorted 뒤, 일반 noDate 앞에 배치
-  const liveNoDate    = noDate.filter(t => t.step === 'Live');
-  const nonLiveNoDate = noDate.filter(t => t.step !== 'Live');
-  const allRows = [...sorted, ...liveNoDate, ...nonLiveNoDate];
+  const sorted  = [...ft].filter(t => t.startDate || t.due).sort((a,b) => {
+    const da = new Date(a.startDate || a.due);
+    const db = new Date(b.startDate || b.due);
+    return da - db;
+  });
+  const noDate  = ft.filter(t => !t.startDate && !t.due);
+  const allRows = [...sorted, ...noDate];
 
   // 업무명에서 · 매체 부분 분리
   function splitTitle(title) {
@@ -773,12 +774,15 @@ function renderFlowGantt(ft, container) {
     const showName = baseName !== prevBaseName;
     prevBaseName   = baseName;
 
-    const start = t.startDate ? new Date(t.startDate) : null;
-    const end   = t.due       ? new Date(t.due)       : null;
-    if (start) start.setHours(0,0,0,0);
-    if (end)   end.setHours(0,0,0,0);
+    const start = new Date(t.startDate || t.due || '');
+    const end   = t.due ? new Date(t.due) : null;
+    if (start && !t.startDate && !t.due) { /* 날짜 아예 없음 */ }
+    if (!isNaN(start)) start.setHours(0,0,0,0);
+    if (end) end.setHours(0,0,0,0);
+    const validStart = !isNaN(start.getTime()) ? start : null;
+    const validEnd   = end;
 
-    const barDays  = (start && end) ? Math.round((end - start) / 86400000) + 1 : 0;
+    const barDays  = (validStart && validEnd) ? Math.round((validEnd - validStart) / 86400000) + 1 : 0;
     const showLabel = barDays >= 3;
 
     const cells = dates.map((d) => {
@@ -787,13 +791,13 @@ function renderFlowGantt(ft, container) {
       const bgBase    = isToday ? 'background:var(--color-background-info);' : isWeekend ? 'background:var(--color-background-secondary);' : '';
 
       // 날짜 없는 경우 — 빈 셀
-      if (!start || !end) return `<td style="${bgBase}"></td>`;
+      if (!validStart || !validEnd) return `<td style="${bgBase}"></td>`;
 
-      const inRange = d >= start && d <= end;
+      const inRange = d >= validStart && d <= validEnd;
       if (!inRange) return `<td style="${bgBase}"></td>`;
-      const isStart = sameDay(d, start);
-      const isEnd   = sameDay(d, end);
-      const midDate = new Date(start.getTime() + (end.getTime() - start.getTime()) / 2);
+      const isStart = sameDay(d, validStart);
+      const isEnd   = sameDay(d, validEnd);
+      const midDate = new Date(validStart.getTime() + (validEnd.getTime() - validStart.getTime()) / 2);
       midDate.setHours(0,0,0,0);
       const isMid   = showLabel && sameDay(d, midDate);
       const radius  = `${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
