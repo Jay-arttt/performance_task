@@ -17,10 +17,12 @@ const MEDIA_STYLE = {
   '네이버 BSA': { bg: '#EAF3DE', c: '#27500A' },
   '네이버 PL':  { bg: '#EAF3DE', c: '#27500A' },
   '네이버 쇼검':{ bg: '#EAF3DE', c: '#27500A' },
+  '네이버 보장':{ bg: '#EAF3DE', c: '#27500A' },
+  '네이버 신검':{ bg: '#EAF3DE', c: '#27500A' },
   '구글':       { bg: '#FAECE7', c: '#712B13' },
   '카카오':     { bg: '#FAEEDA', c: '#633806' },
 };
-const BID_MEDIA = ['네이버 PL', '네이버 쇼검'];
+const BID_MEDIA = ['네이버 PL', '네이버 쇼검', '네이버 보장', '네이버 신검'];
 
 const ETC_TYPES = {
   '미디어믹스': { icon: '믹', bg: '#E6F1FB', c: '#0C447C' },
@@ -51,7 +53,8 @@ let state = {
   filterMedia: 'all',
   filterDue: 'all',
   filterPriority: 'all',
-  showCompleted: false,  // 완료 업무 기본 숨김
+  showCompleted: false,
+  dailyView: 'day',    // day | week
   resourceCat: '전체',
   viewDate: new Date(),
   sortKey: 'due',
@@ -399,7 +402,7 @@ function makeCampaignCard(t) {
     if (taskInDB) taskInDB.status = newStatus;
     t.status = newStatus;
     try {
-      await callAppsScript({ action: 'update', sheetName: 'campaign', id: t.id, row: { status: newStatus } });
+      callAppsScript({ action: 'update', sheetName: 'campaign', id: t.id, row: { status: newStatus } });
     } catch (_) {}
     showToast(newStatus === '완료' ? `"${t.title}" 완료됐어요` : `"${t.title}" 진행중으로 변경됐어요`);
     renderCurrentView();
@@ -410,7 +413,7 @@ function makeCampaignCard(t) {
     const newPriority = t.priority === '긴급' ? '일반' : '긴급';
     t.priority = newPriority;
     try {
-      await callAppsScript({ action: 'update', sheetName: 'campaign', id: t.id, row: { priority: newPriority } });
+      callAppsScript({ action: 'update', sheetName: 'campaign', id: t.id, row: { priority: newPriority } });
     } catch (_) {}
     showToast(newPriority === '긴급' ? `"${t.title}" 긴급 설정됨` : `"${t.title}" 긴급 해제됨`);
     renderCurrentView();
@@ -550,13 +553,11 @@ function openListInlineEditor(cell, task, field, onSave) {
   const MEDIA_OPTS   = ['','Meta','GFA','네이버 BSA','네이버 PL','네이버 쇼검','구글','카카오'];
   const members      = getActiveMembers();
 
-  async function saveField(value) {
+  function saveField(value) {
     task[field] = value;
     editor.remove();
-    try {
-      await callAppsScript({ action:'update', sheetName:'campaign', id:task.id, row:{ [field]: value } });
-    } catch(_) {}
-    onSave();
+    onSave(); // 화면 즉시 갱신
+    callAppsScript({ action:'update', sheetName:'campaign', id:task.id, row:{ [field]: value } }, { silent:true });
   }
 
   if (field === 'due') {
@@ -639,13 +640,15 @@ function renderFlowGantt(ft, container) {
 
   // 매체 아이콘 약자
   const MEDIA_ICON = {
-    'Meta': {icon:'M', bg:'#E6F1FB', c:'#0C447C'},
-    'GFA':  {icon:'G', bg:'#E1F5EE', c:'#085041'},
-    '네이버 BSA': {icon:'BSA', bg:'#EAF3DE', c:'#27500A'},
-    '네이버 PL':  {icon:'PL',  bg:'#EAF3DE', c:'#27500A'},
-    '네이버 쇼검':{icon:'쇼검', bg:'#EAF3DE', c:'#27500A'},
-    '구글':  {icon:'G', bg:'#FAECE7', c:'#712B13'},
-    '카카오':{icon:'K', bg:'#FAEEDA', c:'#633806'},
+    'Meta':       {icon:'메타',   bg:'#E6F1FB', c:'#0C447C'},
+    'GFA':        {icon:'Ngfa',  bg:'#E1F5EE', c:'#085041'},
+    '네이버 BSA': {icon:'N브검', bg:'#EAF3DE', c:'#27500A'},
+    '네이버 PL':  {icon:'N파링', bg:'#EAF3DE', c:'#27500A'},
+    '네이버 쇼검':{icon:'N쇼검', bg:'#EAF3DE', c:'#27500A'},
+    '네이버 보장':{icon:'N보장', bg:'#EAF3DE', c:'#27500A'},
+    '네이버 신검':{icon:'N신검', bg:'#EAF3DE', c:'#27500A'},
+    '구글':       {icon:'구글',  bg:'#FAECE7', c:'#712B13'},
+    '카카오':     {icon:'카카오', bg:'#FAEEDA', c:'#633806'},
   };
 
   const colW    = 36;
@@ -735,7 +738,7 @@ function renderFlowGantt(ft, container) {
         ` : ''}
       </td>
       <td style="padding:3px;text-align:center;">
-        ${mi ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:18px;border-radius:4px;font-size:8px;font-weight:700;background:${mi.bg};color:${mi.c};" title="${t.media}">${mi.icon}</span>` : ''}
+        ${mi ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:18px;padding:0 4px;border-radius:4px;font-size:8px;font-weight:700;background:${mi.bg};color:${mi.c};white-space:nowrap;" title="${t.media}">${mi.icon}</span>` : ''}
       </td>
       <td style="padding:4px;text-align:center;"><span style="${stepStyle}">${t.step}</span></td>
       <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 17)}</div></td>
@@ -762,6 +765,23 @@ function renderFlowGantt(ft, container) {
 //  뷰 2: 데일리 뷰
 // ──────────────────────────────────────────
 function renderDaily() {
+  document.getElementById('brandTabsWrap').innerHTML    = '';
+  document.getElementById('flowControlsWrap').innerHTML = '';
+  document.getElementById('metricsWrap').innerHTML      = '';
+
+  // 일간/주간 토글 버튼 상태 반영
+  document.querySelectorAll('[data-dview]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.dview === state.dailyView);
+  });
+
+  if (state.dailyView === 'week') {
+    renderWeekly();
+  } else {
+    renderDailyDay();
+  }
+}
+
+function renderDailyDay() {
   document.getElementById('brandTabsWrap').innerHTML = '';
   document.getElementById('flowControlsWrap').innerHTML = '';
   document.getElementById('metricsWrap').innerHTML = '';
@@ -836,7 +856,7 @@ function renderDaily() {
         const assignees   = parseAssignees(task.assignee);
         if (assignees.includes(newAssignee)) return; // 이미 담당자면 스킵
         task.assignee = newAssignee;
-        try { await callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ assignee: newAssignee } }); } catch(_) {}
+        try { callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ assignee: newAssignee } }); } catch(_) {}
         showToast(`"${task.title}" → ${newAssignee}`);
         renderDaily();
       } catch(_) {}
@@ -879,11 +899,107 @@ function setupDailyDateDrop() {
         }
 
         task.due = newDate;
-        try { await callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ due: newDate } }); } catch(_) {}
+        try { callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ due: newDate } }); } catch(_) {}
         showToast(`"${task.title}" 기한 → ${newDate}`);
         renderDaily();
       } catch(_) {}
     });
+  });
+}
+
+// ── 주간 뷰 ───────────────────────────────
+function renderWeekly() {
+  // 이번 주 월~금 날짜 계산
+  const base = new Date(state.viewDate);
+  const dow  = base.getDay(); // 0=일
+  const mon  = new Date(base);
+  mon.setDate(base.getDate() - (dow === 0 ? 6 : dow - 1));
+  mon.setHours(0,0,0,0);
+
+  const weekDates = Array.from({length:5}, (_, i) => {
+    const d = new Date(mon); d.setDate(mon.getDate() + i); return d;
+  });
+
+  // 날짜 라벨 업데이트
+  const fri = weekDates[4];
+  document.getElementById('dailyDateLabel').textContent =
+    `${mon.getMonth()+1}/${mon.getDate()} — ${fri.getMonth()+1}/${fri.getDate()}`;
+
+  // 담당자 필터 + 추가 버튼
+  const members = getActiveMembers();
+  document.getElementById('memberFilterWrap').innerHTML = `
+    <label class="ctrl-label">담당자</label>
+    <select class="ctrl-select" id="selMemberWeek">
+      <option value="all">전체</option>
+      ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
+    </select>
+    <div style="margin-left:auto;">
+      <button class="modal-btn-save" id="weekAddBtn" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+    </div>`;
+  document.getElementById('selMemberWeek')?.addEventListener('change', e => { state.member = e.target.value; renderWeekly(); });
+  document.getElementById('weekAddBtn')?.addEventListener('click', () => openDailyAddMenu());
+
+  const grid = document.getElementById('dailyGrid');
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(5, minmax(0, 1fr))';
+  grid.style.gap = '8px';
+  grid.innerHTML = '';
+
+  const DAYS_KR = ['월','화','수','목','금'];
+  const allTasks = [
+    ...DB.campaign.map(t => ({...t, _src:'campaign'})),
+    ...DB.common.map(t => ({...t, _src:'common'})),
+    ...DB.report.map(t => ({...t, _src:'report'})),
+  ].filter(t => t.due);
+
+  weekDates.forEach((date, i) => {
+    const isToday = sameDay(date, TODAY);
+    const dayTasks = allTasks.filter(t => {
+      if (!sameDay(new Date(t.due), date)) return false;
+      if (state.member !== 'all') {
+        return parseAssignees(t.assignee).includes(state.member);
+      }
+      return true;
+    });
+
+    // 긴급 먼저 정렬
+    dayTasks.sort((a, b) => (b.priority === '긴급' ? 1 : 0) - (a.priority === '긴급' ? 1 : 0));
+
+    const col = document.createElement('div');
+    col.className = 'daily-col week-col' + (isToday ? ' week-today' : '');
+    col.innerHTML = `<div class="daily-col-header" style="${isToday?'background:var(--color-background-info);':''};padding:8px 10px;">
+      <div style="text-align:center;width:100%;">
+        <div style="font-size:11px;color:var(--color-text-tertiary);font-weight:500;">${DAYS_KR[i]}</div>
+        <div style="font-size:20px;font-weight:600;color:${isToday?'var(--color-text-info)':'var(--color-text-primary)'};">${date.getDate()}</div>
+        <div style="font-size:10px;color:var(--color-text-tertiary);">${dayTasks.length}건</div>
+      </div>
+    </div>`;
+
+    if (!dayTasks.length) {
+      col.innerHTML += `<div class="daily-empty">없음</div>`;
+    } else {
+      dayTasks.forEach(t => col.appendChild(makeDailyCard(t)));
+    }
+
+    // 드롭 이벤트 (날짜 변경)
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('daily-drag-over'); });
+    col.addEventListener('dragleave', e => { if (!col.contains(e.relatedTarget)) col.classList.remove('daily-drag-over'); });
+    col.addEventListener('drop', async e => {
+      e.preventDefault(); col.classList.remove('daily-drag-over');
+      try {
+        const { id, src } = JSON.parse(e.dataTransfer.getData('text/plain'));
+        const dbKey = src === 'campaign' ? 'campaign' : src === 'common' ? 'common' : 'report';
+        const task  = DB[dbKey].find(x => String(x.id) === String(id));
+        if (!task) return;
+        const newDate = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+        task.due = newDate;
+        try { callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ due: newDate } }); } catch(_) {}
+        showToast(`"${task.title}" → ${DAYS_KR[i]}요일`);
+        renderWeekly();
+      } catch(_) {}
+    });
+
+    grid.appendChild(col);
   });
 }
 
@@ -1056,7 +1172,7 @@ function makeEtcCard(t, style) {
     e.stopPropagation();
     const newPriority = t.priority === '긴급' ? '일반' : '긴급';
     t.priority = newPriority;
-    try { await callAppsScript({ action: 'update', sheetName: 'common', id: t.id, row: { priority: newPriority } }); } catch (_) {}
+    try { callAppsScript({ action: 'update', sheetName: 'common', id: t.id, row: { priority: newPriority } }); } catch (_) {}
     showToast(newPriority === '긴급' ? `"${t.title}" 긴급 설정됨` : `"${t.title}" 긴급 해제됨`);
     renderEtc();
   });
@@ -1136,7 +1252,7 @@ function makeReportCard(t) {
     e.stopPropagation();
     const newPriority = t.priority === '긴급' ? '일반' : '긴급';
     t.priority = newPriority;
-    try { await callAppsScript({ action: 'update', sheetName: 'report', id: t.id, row: { priority: newPriority } }); } catch (_) {}
+    try { callAppsScript({ action: 'update', sheetName: 'report', id: t.id, row: { priority: newPriority } }); } catch (_) {}
     showToast(newPriority === '긴급' ? `"${t.title}" 긴급 설정됨` : `"${t.title}" 긴급 해제됨`);
     renderReport();
   });
@@ -1187,9 +1303,22 @@ function bindEvents() {
     state.brand = btn.dataset.brand; renderCurrentView();
   });
 
-  document.getElementById('prevDay')?.addEventListener('click', () => { state.viewDate.setDate(state.viewDate.getDate()-1); renderDaily(); });
-  document.getElementById('nextDay')?.addEventListener('click', () => { state.viewDate.setDate(state.viewDate.getDate()+1); renderDaily(); });
-  document.getElementById('todayBtn')?.addEventListener('click', () => { state.viewDate = new Date(); state.viewDate.setHours(0,0,0,0); renderDaily(); });
+  document.getElementById('prevDay')?.addEventListener('click', () => {
+    if (state.dailyView === 'week') state.viewDate.setDate(state.viewDate.getDate() - 7);
+    else state.viewDate.setDate(state.viewDate.getDate() - 1);
+    renderDaily();
+  });
+  document.getElementById('nextDay')?.addEventListener('click', () => {
+    if (state.dailyView === 'week') state.viewDate.setDate(state.viewDate.getDate() + 7);
+    else state.viewDate.setDate(state.viewDate.getDate() + 1);
+    renderDaily();
+  });
+  document.getElementById('todayBtn')?.addEventListener('click', () => {
+    state.viewDate = new Date(); state.viewDate.setHours(0,0,0,0);
+    renderDaily();
+  });
+  document.getElementById('dailyViewDay')?.addEventListener('click', () => { state.dailyView = 'day'; renderDaily(); });
+  document.getElementById('dailyViewWeek')?.addEventListener('click', () => { state.dailyView = 'week'; renderDaily(); });
 }
 
 // ── 진입점 ────────────────────────────────

@@ -124,6 +124,8 @@ async function initData() {
     console.warn('[Dashboard] Sheets 로드 실패:', e.message);
     DB = { campaign:[], common:[], report:[], brands:[], members:[], resources:[] };
   }
+  // Apps Script 콜드 스타트 미리 해결
+  setTimeout(warmUpAppsScript, 1000);
 }
 
 // ── 자동 새로고침 ─────────────────────────

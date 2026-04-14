@@ -189,7 +189,7 @@ function renderResTable() {
       target.pinned = newPinned;
       try {
         if (CONFIG.APPS_SCRIPT_URL && CONFIG.APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL') {
-          await callAppsScript({ action:'update', sheetName:'resources', id:target.id, row:{ pinned: newPinned ? 'TRUE' : 'FALSE' } });
+          callAppsScript({ action:'update', sheetName:'resources', id:target.id, row:{ pinned: newPinned ? 'TRUE' : 'FALSE' } });
         }
       } catch (_) {}
       showToast(newPinned ? `"${target.title}" 핀 고정됐어요` : `"${target.title}" 핀 해제됐어요`);
@@ -293,34 +293,24 @@ function openResourceModal(resource = null) {
     row.pinned    = overlay.querySelector('[name=pinned]').checked ? 'TRUE' : 'FALSE';
     row.updatedAt = new Date().toISOString().slice(0, 10);
 
-    const saveBtn = overlay.querySelector('#resSaveBtn');
-    saveBtn.textContent = '저장 중...'; saveBtn.disabled = true;
+    // 로컬 즉시 반영
+    if (!DB.resources) DB.resources = [];
+    if (isEdit) {
+      const idx = DB.resources.findIndex(r => String(r.id) === String(resource.id));
+      if (idx !== -1) DB.resources[idx] = { ...resource, ...row };
+      else DB.resources.push({ ...row, id: resource.id });
+    } else {
+      row.id = Date.now();
+      DB.resources.push(row);
+    }
+    _catColorCache = {};
+    showToast(isEdit ? '자료가 수정됐어요' : '자료가 추가됐어요');
+    closeModal();
+    renderResources();
 
-    try {
-      if (CONFIG.APPS_SCRIPT_URL && CONFIG.APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL') {
-        await callAppsScript({
-          action: isEdit ? 'update' : 'add',
-          sheetName: 'resources',
-          id: resource?.id,
-          row,
-        });
-      }
-      if (!DB.resources) DB.resources = [];
-      if (isEdit) {
-        const idx = DB.resources.findIndex(r => String(r.id) === String(resource.id));
-        if (idx !== -1) DB.resources[idx] = { ...resource, ...row };
-        else DB.resources.push({ ...row, id: resource.id });
-      } else {
-        row.id = Date.now();
-        DB.resources.push(row);
-      }
-      _catColorCache = {};
-      showToast(isEdit ? '자료가 수정됐어요' : '자료가 추가됐어요');
-      closeModal();
-      renderResources();
-    } catch (err) {
-      showToast('저장 실패: ' + err.message);
-      saveBtn.textContent = '저장'; saveBtn.disabled = false;
+    // 백그라운드 Sheets 저장
+    if (CONFIG.APPS_SCRIPT_URL && CONFIG.APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL') {
+      callAppsScript({ action: isEdit ? 'update' : 'add', sheetName: 'resources', id: resource?.id, row }, { silent:true });
     }
   });
 

@@ -2,19 +2,35 @@
 //  modal.js  —  업무 추가 · 수정 · 캠페인 일괄 등록
 // ─────────────────────────────────────────
 
-const MEDIA_LIST = ['Meta','GFA','네이버 BSA','네이버 PL','네이버 쇼검','구글','카카오'];
+const MEDIA_LIST = ['Meta','GFA','네이버 BSA','네이버 PL','네이버 쇼검','네이버 보장','네이버 신검','구글','카카오'];
 const FLOW_STEPS_BULK = ['소재기획','소재제작','소재등록','소재검수'];
 
-// ── API 호출 ──────────────────────────────
-async function callAppsScript(payload) {
-  console.log('API 호출:', JSON.stringify(payload)); // 디버그
-  const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+// ── Apps Script 워밍업 ────────────────────
+// 페이지 로드 시 콜드 스타트 미리 해결
+function warmUpAppsScript() {
+  if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') return;
+  fetch(CONFIG.APPS_SCRIPT_URL, { method: 'GET' }).catch(() => {});
+}
+
+// ── API 호출 (낙관적 업데이트) ───────────
+// fire-and-forget: 화면은 즉시 갱신, Sheets 저장은 백그라운드에서
+function callAppsScript(payload, { silent = false } = {}) {
+  if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+    return Promise.resolve({ success: true, id: payload.row?.id || Date.now() });
+  }
+  return fetch(CONFIG.APPS_SCRIPT_URL, {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+  .then(res => res.json())
+  .then(json => {
+    if (!json.success && !silent) console.warn('[Sheets] 저장 실패:', json.error);
+    return json;
+  })
+  .catch(err => {
+    if (!silent) console.warn('[Sheets] 네트워크 오류:', err.message);
+    return { success: false };
   });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || '저장 실패');
-  return json;
 }
 
 // ── 날짜 헬퍼 (한국 서울 시간 기준) ─────────
@@ -237,7 +253,7 @@ function updateBulkCount() {
 }
 
 // SA 매체 — 항상 소재기획부터 시작
-const SA_MEDIA     = ['네이버 BSA', '네이버 PL'];
+const SA_MEDIA     = ['네이버 BSA', '네이버 PL', '네이버 보장', '네이버 신검'];
 // 쇼검 — 소재등록부터 시작
 const SEARCH_MEDIA = ['네이버 쇼검'];
 
@@ -309,17 +325,29 @@ async function submitBulk() {
       });
     });
 
-    for (const row of allRows) {
-      console.log('전송 데이터:', JSON.stringify(row)); // 디버그
-      const result = await callAppsScript({ action: 'add', sheetName: 'campaign', row });
-      row.id = result.id;
+    // 로컬 DB에 먼저 추가 → 화면 즉시 갱신
+    allRows.forEach(row => {
+      row.id = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       addToLocalDB('campaign', row);
-    }
-    showToast(`캠페인 일정 등록 완료 — 카드 ${allRows.length}개 생성됐어요`);
+    });
     closeModal();
     renderCurrentView();
+    showToast(`캠페인 일정 등록 완료 — 카드 ${allRows.length}개 생성됐어요`);
+
+    // 백그라운드에서 Sheets에 순차 저장
+    (async () => {
+      for (const row of allRows) {
+        try {
+          const result = await callAppsScript({ action:'add', sheetName:'campaign', row });
+          if (result?.id) {
+            const t = DB.campaign.find(x => String(x.id) === String(row.id));
+            if (t) t.id = result.id;
+          }
+        } catch(_) {}
+      }
+    })();
   } catch (err) {
-    showToast('저장 실패: ' + err.message);
+    showToast('등록 실패: ' + err.message);
     saveBtn.textContent = '일정 등록'; saveBtn.disabled = false;
   }
 }
@@ -520,8 +548,8 @@ document.addEventListener('click', e => {
 
 // ── 일반 모달 제출 ────────────────────────
 async function submitModal(mode, sheetName, task) {
-  const form    = document.getElementById('modalForm');
-  const saveBtn = document.getElementById('modalSaveBtn');
+  const form     = document.getElementById('modalForm');
+  const saveBtn  = document.getElementById('modalSaveBtn');
   const formData = new FormData(form);
   const row = {};
   for (const [key, val] of formData.entries()) {
@@ -531,23 +559,31 @@ async function submitModal(mode, sheetName, task) {
   if (sheetName === 'campaign') {
     row.hasBid = form.querySelector('[name=hasBid]')?.checked ? 'TRUE' : 'FALSE';
   }
-  saveBtn.textContent = '저장 중...'; saveBtn.disabled = true;
-  try {
-    if (mode === 'add') {
-      const result = await callAppsScript({ action: 'add', sheetName, row });
-      row.id = result.id;
-      addToLocalDB(sheetName, row);
-      showToast('업무가 추가됐어요');
-    } else {
-      await callAppsScript({ action: 'update', sheetName, id: task.id, row });
-      updateLocalDB(sheetName, task.id, row);
-      showToast('업무가 수정됐어요');
-    }
+
+  if (mode === 'add') {
+    // 임시 id 부여 → 화면 즉시 갱신 → 백그라운드 저장 → 실제 id로 교체
+    row.id = 'temp_' + Date.now();
+    addToLocalDB(sheetName, row);
     closeModal();
     renderCurrentView();
-  } catch (err) {
-    showToast('저장 실패: ' + err.message);
-    saveBtn.textContent = '저장'; saveBtn.disabled = false;
+    showToast('업무가 추가됐어요');
+    callAppsScript({ action:'add', sheetName, row }).then(result => {
+      if (result?.id) {
+        // 임시 id를 실제 id로 교체
+        const key = {campaign:'campaign',common:'common',report:'report'}[sheetName];
+        if (key) {
+          const t = DB[key].find(x => String(x.id) === String(row.id));
+          if (t) t.id = result.id;
+        }
+      }
+    });
+  } else {
+    // 수정: 로컬 먼저 반영 → 화면 갱신 → 백그라운드 저장
+    updateLocalDB(sheetName, task.id, row);
+    closeModal();
+    renderCurrentView();
+    showToast('업무가 수정됐어요');
+    callAppsScript({ action:'update', sheetName, id:task.id, row }, { silent: true });
   }
 }
 
