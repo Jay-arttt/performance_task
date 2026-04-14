@@ -668,8 +668,8 @@ button { font-family: inherit; cursor: pointer; }
 .daily-col.daily-drag-over{background:var(--color-background-info);outline:2px dashed var(--color-border-info);outline-offset:-2px;border-radius:var(--radius-md);}
 
 /* ── 날짜 퀵 버튼 ── */
-.date-quick-btn{font-size:12px;padding:5px 14px;border-radius:8px;border:1.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer;font-family:inherit;font-weight:500;transition:all .12s;}
-.date-quick-btn:hover{border-color:var(--color-border-primary);color:var(--color-text-primary);background:var(--color-background-primary);}
+.date-quick-btn{font-size:12px;padding:5px 16px;border-radius:8px;border:2px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;font-family:inherit;font-weight:500;transition:all .12s;}
+.date-quick-btn:hover{border-color:var(--color-border-primary);color:var(--color-text-primary);}
 .date-quick-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
 
 /* ── 완료 토글 버튼 ── */
@@ -680,3 +680,18 @@ button { font-family: inherit; cursor: pointer; }
 /* ── 주간 뷰 ── */
 .week-col .daily-col-header{padding:8px 10px;justify-content:center;}
 .week-today{outline:2px solid var(--color-border-info);outline-offset:-1px;}
+
+/* ── 숨기기 버튼 ── */
+.modal-btn-hide{font-size:12px;padding:6px 12px;border-radius:8px;border:.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-tertiary);cursor:pointer;font-family:inherit;margin-right:auto;transition:all .12s;}
+.modal-btn-hide:hover{border-color:var(--danger);color:var(--danger);}
+
+/* ── 점세개 메뉴 버튼 ── */
+.card-menu-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:6px;background:transparent;border:none;font-size:13px;cursor:pointer;color:var(--color-text-tertiary);display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s;z-index:2;}
+.card-menu-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary);}
+.task-card:hover .card-menu-btn,
+.etc-card:hover .card-menu-btn,
+.report-card:hover .card-menu-btn{opacity:1 !important;}
+.ctx-btn{display:flex;align-items:center;gap:7px;width:100%;padding:7px 10px;font-size:12px;background:transparent;border:none;border-radius:7px;cursor:pointer;font-family:inherit;color:var(--color-text-primary);text-align:left;}
+.ctx-btn:hover{background:var(--color-background-secondary);}
+.ctx-hide{color:var(--color-text-secondary);}
+.ctx-hide:hover{color:var(--danger);}
