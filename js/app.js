@@ -296,7 +296,7 @@ function renderFlowControls() {
         </select>
       </div>
       <div class="ctrl-spacer"></div>
-      <div style="display:flex;align-items:center;gap:6px;">
+      <div style="display:flex;align-items:center;gap:4px;">
         <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggle">완료</button>
         <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggle">숨김</button>
       </div>
@@ -926,12 +926,18 @@ function renderDailyDay() {
       <option value="all">전체</option>
       ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
     </select>
+    <div style="display:flex;align-items:center;gap:4px;margin-left:8px;">
+      <button class="completed-toggle ${state.showCompleted?'on':''}" id="dailyCompletedToggle">완료</button>
+      <button class="completed-toggle ${state.showHidden?'on':''}" id="dailyHiddenToggle">숨김</button>
+    </div>
     <div style="margin-left:auto;display:flex;gap:6px;">
       <button class="modal-btn-save" id="dailyAddBtn" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
     </div>`;
 
   document.getElementById('selMemberDaily')?.addEventListener('change', e => { state.member = e.target.value; renderDaily(); });
   document.getElementById('dailyAddBtn')?.addEventListener('click', () => openDailyAddMenu());
+  document.getElementById('dailyCompletedToggle')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderDaily(); });
+  document.getElementById('dailyHiddenToggle')?.addEventListener('click', () => { state.showHidden = !state.showHidden; renderDaily(); });
 
   const grid = document.getElementById('dailyGrid');
   grid.innerHTML = '';
@@ -947,7 +953,14 @@ function renderDailyDay() {
     ].filter(t => {
       if (!t.due) return false;
       const assignees = parseAssignees(t.assignee);
-      return assignees.includes(m.name) && sameDay(new Date(t.due), state.viewDate);
+      if (!assignees.includes(m.name)) return false;
+      if (!sameDay(new Date(t.due), state.viewDate)) return false;
+      // 완료 숨김
+      const isDone = t._src === 'campaign' ? t.status === '완료' : (t.done === true || t.done === 'TRUE');
+      if (!state.showCompleted && isDone) return false;
+      // 숨김 처리
+      if (!state.showHidden && (t.hidden === true || t.hidden === 'TRUE')) return false;
+      return true;
     });
 
     const info = getMemberInfo(m.name);
@@ -1079,7 +1092,13 @@ function renderWeekly() {
     ...DB.campaign.map(t => ({...t, _src:'campaign'})),
     ...DB.common.map(t => ({...t, _src:'common'})),
     ...DB.report.map(t => ({...t, _src:'report'})),
-  ].filter(t => t.due);
+  ].filter(t => {
+    if (!t.due) return false;
+    const isDone = t._src === 'campaign' ? t.status === '완료' : (t.done === true || t.done === 'TRUE');
+    if (!state.showCompleted && isDone) return false;
+    if (!state.showHidden && (t.hidden === true || t.hidden === 'TRUE')) return false;
+    return true;
+  });
 
   weekDates.forEach((date, i) => {
     const isToday = sameDay(date, TODAY);
@@ -1144,8 +1163,11 @@ function makeDailyCard(t) {
   const ss = t.status ? STATUS_STYLE[t.status] || null : null;
   const stepLabel = isReport ? t.type : isEtc ? (es?.label || '공통') : isLive ? 'Live' : (t.step || '');
 
+  // 완료 여부 판단 (campaign=status, common/report=done)
+  const isDone = t._src === 'campaign' ? t.status === '완료' : (t.done === true || t.done === 'TRUE');
+
   const el = document.createElement('div');
-  el.className = 'daily-card' + (isLive ? ' live-card' : '') + (isUrgent ? ' urgent-card' : '');
+  el.className = 'daily-card' + (isLive ? ' live-card' : '') + (isUrgent ? ' urgent-card' : '') + (isDone ? ' done-card' : '');
   el.draggable = true;
   el.dataset.id  = String(t.id);
   el.dataset.src = t._src;
@@ -1162,14 +1184,39 @@ function makeDailyCard(t) {
       ${t.brand ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : '<span class="tag brand-tag">공통</span>'}
       ${rs ? `<span class="tag" style="background:${rs.bg};color:${rs.c}">${t.type}</span>` : ''}
       ${es && isEtc ? `<span class="tag" style="background:${es.bg};color:${es.c}">${es.label}</span>` : ''}
-      ${ss && !isEtc && !isReport ? `<span class="tag" style="background:${ss.bg};color:${ss.c}">${t.status}</span>` : ''}
       ${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : ''}
     </div>
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
-      <span class="due-badge ${due.cls}">${isLive ? '운영중' : due.label}</span>
+      <span class="due-badge ${due.cls}" style="${isDone?'display:none;':''}">${isLive ? '운영중' : due.label}</span>
       <span class="step-label">${stepLabel}</span>
+      <label class="done-check daily-done-check" style="margin-left:auto;" title="${isDone ? '완료 취소' : '완료 체크'}">
+        <input type="checkbox" ${isDone ? 'checked' : ''} data-id="${t.id}" data-src="${t._src}">
+        <span class="check-box">${isDone ? '✓' : ''}</span>
+      </label>
     </div>`;
+
+  // 완료 체크박스 이벤트
+  el.querySelector('.daily-done-check input').addEventListener('change', e => {
+    e.stopPropagation();
+    const src    = e.target.dataset.src;
+    const id     = e.target.dataset.id;
+    const dbKey  = src === 'campaign' ? 'campaign' : src === 'common' ? 'common' : 'report';
+    const task   = DB[dbKey].find(x => String(x.id) === String(id));
+    if (!task) return;
+
+    if (src === 'campaign') {
+      const newStatus = e.target.checked ? '완료' : '진행중';
+      task.status = newStatus;
+      callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ status: newStatus } }, { silent:true });
+      showToast(e.target.checked ? `"${task.title}" 완료됐어요` : `"${task.title}" 진행중으로 변경됐어요`);
+    } else {
+      task.done = e.target.checked;
+      callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ done: e.target.checked ? 'TRUE' : 'FALSE' } }, { silent:true });
+      showToast(e.target.checked ? `"${task.title}" 완료됐어요` : `"${task.title}" 취소됐어요`);
+    }
+    renderDaily();
+  });
 
   // 업무명 클릭 → 수정 모달
   el.querySelector('.daily-title-link').addEventListener('click', () => {
@@ -1252,7 +1299,8 @@ function renderEtc() {
 
   const filtered = DB.common.filter(t =>
     (state.member === 'all' || parseAssignees(t.assignee).includes(state.member)) &&
-    (state.showCompleted || !t.done)
+    (state.showCompleted || !t.done) &&
+    (state.showHidden || !(t.hidden === true || t.hidden === 'TRUE'))
   );
   renderMetrics(filtered, 'etc');
 
@@ -1260,14 +1308,16 @@ function renderEtc() {
   container.innerHTML = '';
 
   const addBar = document.createElement('div');
-  addBar.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;';
+  addBar.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:12px;';
   addBar.innerHTML = `
-    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleEtc">${state.showCompleted?'완료 숨기기':'완료 포함'}</button>
-    <button class="modal-btn-save" onclick="openModal('add','common')" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>`;
+    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleEtc">완료</button>
+    <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleEtc">숨김</button>
+    <div style="margin-left:auto;">
+      <button class="modal-btn-save" onclick="openModal('add','common')" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+    </div>`;
   container.appendChild(addBar);
-  document.getElementById('completedToggleEtc')?.addEventListener('click', () => {
-    state.showCompleted = !state.showCompleted; renderEtc();
-  });
+  document.getElementById('completedToggleEtc')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderEtc(); });
+  document.getElementById('hiddenToggleEtc')?.addEventListener('click', () => { state.showHidden = !state.showHidden; renderEtc(); });
 
   Object.entries(ETC_TYPES).forEach(([typeName, style]) => {
     const group = filtered.filter(t => t.type === typeName);
@@ -1315,8 +1365,12 @@ function makeEtcCard(t, style) {
     renderEtc();
   });
   el.querySelector('input').addEventListener('change', e => {
-    const task = DB.common.find(x => x.id === Number(e.target.dataset.id));
-    if (task) { task.done = e.target.checked; renderEtc(); showToast(task.done ? `"${task.title}" 완료` : `"${task.title}" 취소`); }
+    const task = DB.common.find(x => String(x.id) === String(e.target.dataset.id));
+    if (!task) return;
+    task.done = e.target.checked;
+    callAppsScript({ action:'update', sheetName:'common', id:task.id, row:{ done: e.target.checked ? 'TRUE' : 'FALSE' } }, { silent:true });
+    showToast(task.done ? `"${task.title}" 완료됐어요` : `"${task.title}" 취소됐어요`);
+    renderEtc();
   });
   return el;
 }
@@ -1340,22 +1394,24 @@ function renderReport() {
   const filtered = DB.report.filter(t =>
     (state.brand === 'all' || t.brand === state.brand) &&
     (state.member === 'all' || parseAssignees(t.assignee).includes(state.member)) &&
-    (state.showCompleted || !t.done)
+    (state.showCompleted || !t.done) &&
+    (state.showHidden || !(t.hidden === true || t.hidden === 'TRUE'))
   );
   renderMetrics(filtered, 'report');
   const grid = document.getElementById('reportGrid');
   grid.innerHTML = '';
 
   const addBar = document.createElement('div');
-  addBar.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;grid-column:1/-1;';
+  addBar.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:12px;grid-column:1/-1;';
   addBar.innerHTML = `
-    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleRpt">${state.showCompleted?'완료 숨기기':'완료 포함'}</button>
-    <button class="modal-btn-save" onclick="openModal('add','report')" style="font-size:12px;padding:6px 14px;">+ 리포트 추가</button>`;
+    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleRpt">완료</button>
+    <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleRpt">숨김</button>
+    <div style="margin-left:auto;">
+      <button class="modal-btn-save" onclick="openModal('add','report')" style="font-size:12px;padding:6px 14px;">+ 리포트 추가</button>
+    </div>`;
   grid.appendChild(addBar);
-  document.getElementById('completedToggleRpt')?.addEventListener('click', () => {
-    state.showCompleted = !state.showCompleted; renderReport();
-  });
-  grid.appendChild(addBar);
+  document.getElementById('completedToggleRpt')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderReport(); });
+  document.getElementById('hiddenToggleRpt')?.addEventListener('click', () => { state.showHidden = !state.showHidden; renderReport(); });
   filtered.forEach(t => grid.appendChild(makeReportCard(t)));
 }
 
@@ -1395,8 +1451,13 @@ function makeReportCard(t) {
     renderReport();
   });
   el.querySelector('input').addEventListener('change', e => {
-    const task = DB.report.find(x => x.id === Number(e.target.dataset.id));
-    if (task) { task.done = e.target.checked; renderReport(); showToast(task.done ? `"${task.title}" 완료` : `"${task.title}" 취소`); }
+    const task = DB.report.find(x => String(x.id) === String(e.target.dataset.id));
+    if (!task) return;
+    task.done = e.target.checked;
+    callAppsScript({ action:'update', sheetName:'report', id:task.id, row:{ done: e.target.checked ? 'TRUE' : 'FALSE' } }, { silent:true });
+    showToast(task.done ? `"${task.title}" 완료됐어요` : `"${task.title}" 취소됐어요`);
+    renderReport();
+  });
   });
   return el;
 }
