@@ -926,13 +926,13 @@ function renderDailyDay() {
       <option value="all">전체</option>
       ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
     </select>
-    <div style="display:flex;align-items:center;gap:4px;margin-left:8px;">
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:4px;">
       <button class="completed-toggle ${state.showCompleted?'on':''}" id="dailyCompletedToggle">완료</button>
       <button class="completed-toggle ${state.showHidden?'on':''}" id="dailyHiddenToggle">숨김</button>
     </div>
-    <div style="margin-left:auto;display:flex;gap:6px;">
-      <button class="modal-btn-save" id="dailyAddBtn" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
-    </div>`;
+    <div style="width:.5px;height:20px;background:var(--color-border-secondary);margin:0 6px;"></div>
+    <button class="modal-btn-save" id="dailyAddBtn" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>`;
   document.getElementById('selMemberDaily')?.addEventListener('change', e => { state.member = e.target.value; renderDaily(); });
   document.getElementById('dailyAddBtn')?.addEventListener('click', () => openDailyAddMenu());
   document.getElementById('dailyCompletedToggle')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderDaily(); });
@@ -1294,7 +1294,8 @@ function renderEtc() {
       <option value="all">전체</option>
       ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
     </select>
-    <div style="display:flex;align-items:center;gap:4px;margin-left:8px;">
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:4px;">
       <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleEtc">완료</button>
       <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleEtc">숨김</button>
     </div>`;
@@ -1387,7 +1388,8 @@ function renderReport() {
       <option value="all">전체</option>
       ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
     </select>
-    <div style="display:flex;align-items:center;gap:4px;margin-left:8px;">
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:4px;">
       <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleRpt">완료</button>
       <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleRpt">숨김</button>
     </div>`;
