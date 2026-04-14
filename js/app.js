@@ -154,10 +154,22 @@ function driveLink(url, label) {
 function openCardMenu(btn, task, sheetName) {
   document.querySelectorAll('.card-context-menu').forEach(m => m.remove());
 
-  const rect = btn.getBoundingClientRect();
+  const rect    = btn.getBoundingClientRect();
+  const menuW   = 130;
+  const menuH   = 80;
+
+  // 오른쪽이 잘리면 왼쪽으로
+  const left = (rect.right + menuW > window.innerWidth)
+    ? rect.right - menuW
+    : rect.left;
+  // 아래가 잘리면 위로
+  const top = (rect.bottom + menuH > window.innerHeight)
+    ? rect.top - menuH - 4
+    : rect.bottom + 4;
+
   const menu = document.createElement('div');
   menu.className = 'card-context-menu';
-  menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;left:${rect.left}px;z-index:400;background:var(--color-background-primary);border:.5px solid var(--color-border-secondary);border-radius:10px;padding:4px;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.1);`;
+  menu.style.cssText = `position:fixed;top:${top}px;left:${left}px;z-index:500;background:var(--color-background-primary);border:.5px solid var(--color-border-secondary);border-radius:10px;padding:4px;min-width:${menuW}px;box-shadow:0 4px 16px rgba(0,0,0,.12);`;
 
   const isHidden = task.hidden === true || task.hidden === 'TRUE';
   menu.innerHTML = `
@@ -283,13 +295,10 @@ function renderFlowControls() {
         </select>
       </div>
       <div class="ctrl-spacer"></div>
-      <button class="completed-toggle ${state.showCompleted ? 'on' : ''}" id="completedToggle">
-        ${state.showCompleted ? '완료 숨기기' : '완료 포함'}
-      </button>
-      <button class="completed-toggle ${state.showHidden ? 'on' : ''}" id="hiddenToggle" style="color:var(--color-text-tertiary);">
-        ${state.showHidden ? '숨김 해제' : '숨김 포함'}
-      </button>
       <div class="view-toggle">
+        <button class="vbtn ${state.showCompleted?'active':''}" id="completedToggle" title="완료 업무 표시">완료</button>
+        <button class="vbtn ${state.showHidden?'active':''}" id="hiddenToggle" title="숨김 업무 표시">숨김</button>
+        <div style="width:.5px;background:var(--color-border-tertiary);margin:4px 2px;"></div>
         <button class="vbtn ${state.flowView==='board'?'active':''}" data-flowview="board">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
           보드
@@ -382,7 +391,7 @@ function renderFlow() {
 // ── 보드 뷰 ───────────────────────────────
 function renderFlowBoard(ft, container) {
   container.className = 'flow-scroll';
-  container.innerHTML = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+  container.innerHTML = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;">
     <button class="modal-btn-cancel" id="btnAddCampaign" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
     <button class="modal-btn-save" id="btnBulkCampaign" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
   </div>
@@ -438,7 +447,7 @@ function makeCampaignCard(t) {
     <div class="card-title">${t.title}</div>
     <div class="card-tags">
       ${isUrgent ? `<span class="tag urgent-tag">긴급</span>` : ''}
-      <span class="tag" style="background:${ss.bg};color:${ss.c}">${isLive ? '운영중' : t.status}</span>
+      ${!isLive ? `<span class="tag" style="background:${ss.bg};color:${ss.c}">${t.status}</span>` : ''}
       ${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : ''}
       ${isBid ? `<span class="tag bid-tag">입찰가</span>` : ''}
       ${state.brand === 'all' ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : ''}
@@ -1208,7 +1217,7 @@ function openDailyAddMenu() {
   document.body.appendChild(menu);
 
   const btns = menu.querySelectorAll('.daily-menu-btn');
-  btns[0].addEventListener('click', () => { menu.remove(); openModal('bulk'); });
+  btns[0].addEventListener('click', () => { menu.remove(); openModal('add', 'campaign'); });
   btns[1].addEventListener('click', () => { menu.remove(); openModal('add', 'common'); });
   btns[2].addEventListener('click', () => { menu.remove(); openModal('add', 'report'); });
 
