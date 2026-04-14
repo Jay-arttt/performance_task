@@ -668,11 +668,15 @@ button { font-family: inherit; cursor: pointer; }
 .daily-col.daily-drag-over{background:var(--color-background-info);outline:2px dashed var(--color-border-info);outline-offset:-2px;border-radius:var(--radius-md);}
 
 /* ── 날짜 퀵 버튼 ── */
-.date-quick-btn{font-size:11px;padding:3px 10px;border-radius:20px;border:.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer;font-family:inherit;transition:background .1s,color .1s,border-color .1s;}
-.date-quick-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary);}
+.date-quick-btn{font-size:12px;padding:5px 14px;border-radius:8px;border:1.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer;font-family:inherit;font-weight:500;transition:all .12s;}
+.date-quick-btn:hover{border-color:var(--color-border-primary);color:var(--color-text-primary);background:var(--color-background-primary);}
 .date-quick-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
 
 /* ── 완료 토글 버튼 ── */
 .completed-toggle{font-size:11px;padding:5px 12px;border-radius:20px;border:.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-tertiary);cursor:pointer;font-family:inherit;transition:all .12s;}
 .completed-toggle:hover{color:var(--color-text-primary);border-color:var(--color-border-primary);}
 .completed-toggle.on{background:var(--color-background-secondary);color:var(--color-text-primary);border-color:var(--color-border-primary);}
+
+/* ── 주간 뷰 ── */
+.week-col .daily-col-header{padding:8px 10px;justify-content:center;}
+.week-today{outline:2px solid var(--color-border-info);outline-offset:-1px;}
