@@ -126,18 +126,22 @@ function buildBulkModalHTML() {
     '소재제작': {bg:'#FAEEDA',c:'#633806'},
     '소재등록': {bg:'#EAF3DE',c:'#27500A'},
     '소재검수': {bg:'#EAF3DE',c:'#27500A'},
+    'Live':     {bg:'#9FE1CB',c:'#04342C'},
   };
 
-  const stepRows = FLOW_STEPS_BULK.map((step, i) => {
+  const ALL_STEPS = [...FLOW_STEPS_BULK, 'Live'];
+
+  const stepRows = ALL_STEPS.map((step, i) => {
     const s = STEP_STYLE[step];
     const defaultStart = i === 0 ? todayStr() : '';
     const defaultEnd   = i === 0 ? todayStr() : '';
+    const isLive = step === 'Live';
     return `<div class="bulk-step-row" data-step="${step}" data-idx="${i}">
       <span class="bulk-step-badge" style="background:${s.bg};color:${s.c};">${step}</span>
       <div class="bulk-date-range">
-        <input type="date" class="field-input bulk-start" style="font-size:12px;padding:5px 8px;" data-idx="${i}" value="${defaultStart}" placeholder="시작일">
+        <input type="date" class="field-input bulk-start" style="font-size:12px;padding:5px 8px;" data-idx="${i}" value="${defaultStart}" placeholder="시작일${isLive?' (선택)':''}">
         <span style="font-size:11px;color:var(--color-text-tertiary);flex-shrink:0;">~</span>
-        <input type="date" class="field-input bulk-end" style="font-size:12px;padding:5px 8px;" data-idx="${i}" value="${defaultEnd}" placeholder="기한">
+        <input type="date" class="field-input bulk-end" style="font-size:12px;padding:5px 8px;" data-idx="${i}" value="${defaultEnd}" placeholder="${isLive?'종료일 (선택)':'기한'}">
       </div>
       <div class="assignee-picker bulk-assignee" data-idx="${i}">${memberChips()}</div>
     </div>`;
@@ -245,6 +249,7 @@ function initBulkModal() {
       const endInput = document.querySelector(`.bulk-end[data-idx="${idx}"]`);
       if (endInput && endInput.value && endInput.value < e.target.value) endInput.value = e.target.value;
     }
+    updateBulkCount(); // 날짜 바뀔 때마다 카운터 갱신
   });
 }
 
@@ -253,13 +258,25 @@ function updateBulkCount() {
   const label    = document.getElementById('bulkCountLabel');
   if (!selected.length) { label.innerHTML = '매체를 선택해주세요'; return; }
 
+  const ends = [...document.querySelectorAll('.bulk-end')].map(i => i.value);
+  // ends[0~3] = 소재기획~소재검수, ends[4] = Live
+
   let total = 0;
   selected.forEach((media, idx) => {
     const isSA     = SA_MEDIA.includes(media);
     const isSearch = SEARCH_MEDIA.includes(media);
-    if (isSearch) total += 3; // 소재등록·소재검수·Live
-    else if (selected.length > 1 && !isSA && idx > 0) total += 3; // 소재등록·소재검수·Live
-    else total += 5; // 전체 단계
+    let steps;
+    if (isSearch) steps = ['소재등록','소재검수'];
+    else if (selected.length > 1 && !isSA && idx > 0) steps = ['소재등록','소재검수'];
+    else steps = FLOW_STEPS_BULK;
+
+    // 날짜 입력된 단계만 카운트
+    steps.forEach(step => {
+      const stepIdx = FLOW_STEPS_BULK.indexOf(step);
+      if (ends[stepIdx]) total++;
+    });
+    // Live는 항상 카운트 (날짜 없어도 등록됨)
+    total++;
   });
 
   label.innerHTML = `저장 시 카드 <span style="color:var(--color-text-success);font-weight:500;">${total}개</span> 생성`;
@@ -281,7 +298,7 @@ async function submitBulk() {
 
   if (!baseTitle)            { showToast('업무명을 입력해주세요'); return; }
   if (!selectedMedia.length) { showToast('매체를 하나 이상 선택해주세요'); return; }
-  if (ends.some(d => !d))    { showToast('모든 단계의 기한을 입력해주세요'); return; }
+  if (!ends.some(d => d))    { showToast('최소 한 단계의 기한을 입력해주세요'); return; }
 
   const stepAssignees = [...document.querySelectorAll('.bulk-assignee')].map(picker =>
     [...picker.querySelectorAll('.assignee-chip.checked')].map(c => c.dataset.name).join(',')
@@ -313,27 +330,34 @@ async function submitBulk() {
         steps = FLOW_STEPS_BULK; // ['소재기획','소재제작','소재등록','소재검수']
       }
 
-      // 단계별 날짜 인덱스 매핑 (FLOW_STEPS_BULK 기준)
+      // 단계별 날짜 인덱스 매핑 (FLOW_STEPS_BULK 기준) — 날짜 없는 단계는 건너뜀
       steps.forEach(step => {
         const stepIdx = FLOW_STEPS_BULK.indexOf(step);
+        const due = ends[stepIdx] || '';
+        if (!due) return; // 기한 없으면 해당 단계 카드 생성 안 함
         allRows.push({
           brand, title: titleWithMedia, priority,
           step, status: '진행중',
           media, hasBid: isBid ? 'TRUE' : 'FALSE',
           assignee: stepAssignees[stepIdx] || stepAssignees[0] || '',
           startDate: starts[stepIdx] || '',
-          due: ends[stepIdx] || '',
+          due,
           notes, driveUrl: '', driveLabel: '',
         });
       });
 
-      // Live 단계 항상 추가
+      // Live 단계 — stepRows의 마지막(idx=4) 날짜·담당자 사용
+      const liveIdx      = FLOW_STEPS_BULK.length; // 4
+      const liveDue      = ends[liveIdx]   || '';
+      const liveStart    = starts[liveIdx] || '';
+      const liveAssignee = stepAssignees[liveIdx] || stepAssignees[stepAssignees.length - 1] || '';
       allRows.push({
         brand, title: titleWithMedia, priority,
         step: 'Live', status: '진행중',
         media, hasBid: isBid ? 'TRUE' : 'FALSE',
-        assignee: stepAssignees[stepAssignees.length - 1] || '',
-        startDate: '', due: '',
+        assignee: liveAssignee,
+        startDate: liveStart,
+        due: liveDue,
         notes, driveUrl: '', driveLabel: '',
       });
     });
@@ -382,21 +406,23 @@ function buildModalHTML(mode, sheetName, task) {
 
   if (sheetName === 'campaign') {
     const isLive = v('step') === 'Live';
+    const stepOptions = [
+      ...FLOW_STEPS_BULK.concat(['Live']),
+      '키워드 추출', '미디어믹스', 'SA 운영', '랜딩 제작', '기타'
+    ].map(s => ({value:s, label:s}));
     fields = `
       ${fieldText('title', '업무명', v('title'), true)}
       ${fieldSelect('brand', '브랜드', brands.map(b => ({value:b.id,label:b.label})), v('brand'), true)}
-      ${fieldSelect('step', '단계', FLOW_STEPS_BULK.concat(['Live']).map(s => ({value:s,label:s})), v('step'), true)}
+      ${fieldSelect('step', '단계', stepOptions, v('step', '소재기획'), true)}
       ${fieldSelect('status', '상태', ['진행중','컨펌대기','완료'].map(s => ({value:s,label:s})), v('status','진행중'), true)}
       ${fieldSelect('media', '매체', [''].concat(MEDIA_LIST).map(s => ({value:s,label:s||'없음'})), v('media'))}
       ${fieldCheck('hasBid', '입찰가 관리 여부', v('hasBid', false))}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
-      ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), !isLive)}
+      ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), false)}
       ${priorityField}
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
       ${fieldText('driveLabel', '파일명', v('driveLabel'))}`;
-
-  } else if (sheetName === 'common') {
     fields = `
       ${fieldSelect('type', '유형', ['미디어믹스','정산','광고비 확인','광고비 충전','입찰가 관리','기타'].map(s => ({value:s,label:s})), v('type','정산'), true)}
       ${fieldText('title', '업무명', v('title'), true)}

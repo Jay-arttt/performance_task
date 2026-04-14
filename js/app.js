@@ -382,10 +382,13 @@ function renderFlow() {
 // ── 보드 뷰 ───────────────────────────────
 function renderFlowBoard(ft, container) {
   container.className = 'flow-scroll';
-  container.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-    <button class="modal-btn-save" onclick="openModal('bulk')" style="font-size:12px;padding:6px 16px;">+ 캠페인 일정 등록</button>
+  container.innerHTML = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+    <button class="modal-btn-cancel" id="btnAddCampaign" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+    <button class="modal-btn-save" id="btnBulkCampaign" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
   </div>
   <div class="flow-board" id="flowBoardInner"></div>`;
+  container.querySelector('#btnAddCampaign').addEventListener('click', () => openModal('add', 'campaign'));
+  container.querySelector('#btnBulkCampaign').addEventListener('click', () => openModal('bulk'));
   const board = container.querySelector('#flowBoardInner');
 
   FLOW_STEPS.forEach(step => {
@@ -527,7 +530,12 @@ function renderFlowList(ft, container) {
     return `class="list-th sortable" data-sort="${key}"`;
   };
 
-  container.innerHTML = `<div style="overflow-x:auto;">
+  container.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+      <button class="modal-btn-cancel" id="btnAddCampaignList" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+      <button class="modal-btn-save" id="btnBulkCampaignList" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
+    </div>
+    <div style="overflow-x:auto;">
     <table class="list-table">
       <thead><tr>
         <th ${thStyle('title')}>업무명</th>
@@ -542,6 +550,9 @@ function renderFlowList(ft, container) {
       <tbody id="listTbody"></tbody>
     </table>
   </div>`;
+
+  container.querySelector('#btnAddCampaignList')?.addEventListener('click', () => openModal('add', 'campaign'));
+  container.querySelector('#btnBulkCampaignList')?.addEventListener('click', () => openModal('bulk'));
 
   const tbody = container.querySelector('#listTbody');
   sorted.forEach(t => {
@@ -729,7 +740,11 @@ function renderFlowGantt(ft, container) {
   const stepW   = 68;
   const memberW = 46;
 
-  let html = `<div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+mediaW+stepW+memberW+colW*DAYS}px">
+  let html = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+    <button class="modal-btn-cancel" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+    <button class="modal-btn-save" id="btnBulkCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
+  </div>
+  <div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+mediaW+stepW+memberW+colW*DAYS}px">
     <thead>
       <tr>
         <th style="width:${nameW}px;text-align:left;padding:5px 8px;">업무</th>
@@ -831,12 +846,18 @@ function renderFlowGantt(ft, container) {
     </tr>`;
   });
 
-  html += `</tbody></table></div>`;
+  html += `</tbody></table></div></div>`;
 
   if (!sorted.length && !noDate.length) {
-    html = `<div style="padding:2rem;text-align:center;color:var(--color-text-tertiary);font-size:13px;">표시할 업무가 없어요</div>`;
+    html = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+      <button class="modal-btn-cancel" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+      <button class="modal-btn-save" id="btnBulkCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
+    </div>
+    <div style="padding:2rem;text-align:center;color:var(--color-text-tertiary);font-size:13px;">표시할 업무가 없어요</div>`;
   }
   container.innerHTML = html;
+  container.querySelector('#btnAddCampaignGantt')?.addEventListener('click', () => openModal('add', 'campaign'));
+  container.querySelector('#btnBulkCampaignGantt')?.addEventListener('click', () => openModal('bulk'));
 
   container.querySelectorAll('.gantt-row').forEach(row => {
     row.addEventListener('click', () => {
@@ -1164,24 +1185,33 @@ function openDailyAddMenu() {
   const existing = document.getElementById('dailyAddMenu');
   if (existing) { existing.remove(); return; }
 
-  const btn = document.getElementById('dailyAddBtn');
+  const btn  = document.getElementById('dailyAddBtn');
   const rect = btn.getBoundingClientRect();
 
   const menu = document.createElement('div');
   menu.id = 'dailyAddMenu';
-  menu.style.cssText = `position:fixed;top:${rect.bottom + 4}px;right:${window.innerWidth - rect.right}px;background:var(--color-background-primary);border:.5px solid var(--color-border-secondary);border-radius:10px;padding:4px;z-index:200;min-width:150px;`;
+  menu.style.cssText = `position:fixed;top:${rect.bottom+6}px;right:${window.innerWidth - rect.right}px;background:var(--color-background-primary);border:.5px solid var(--color-border-secondary);border-radius:10px;padding:4px;z-index:500;min-width:130px;box-shadow:0 4px 16px rgba(0,0,0,.1);`;
   menu.innerHTML = `
-    <button class="daily-menu-btn" id="dmBtn1">브랜드 업무</button>
-    <button class="daily-menu-btn" id="dmBtn2">기타 업무</button>
-    <button class="daily-menu-btn" id="dmBtn3">리포트</button>`;
+    <button class="daily-menu-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="2" y="3" width="6" height="18" rx="1.5"/><rect x="9" y="7" width="6" height="14" rx="1.5"/><rect x="16" y="11" width="6" height="10" rx="1.5"/></svg>
+      브랜드 업무
+    </button>
+    <button class="daily-menu-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      기타 업무
+    </button>
+    <button class="daily-menu-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      리포트
+    </button>`;
 
   document.body.appendChild(menu);
 
-  menu.querySelector('#dmBtn1').addEventListener('click', () => { menu.remove(); openModal('bulk'); });
-  menu.querySelector('#dmBtn2').addEventListener('click', () => { menu.remove(); openModal('add', 'common'); });
-  menu.querySelector('#dmBtn3').addEventListener('click', () => { menu.remove(); openModal('add', 'report'); });
+  const btns = menu.querySelectorAll('.daily-menu-btn');
+  btns[0].addEventListener('click', () => { menu.remove(); openModal('bulk'); });
+  btns[1].addEventListener('click', () => { menu.remove(); openModal('add', 'common'); });
+  btns[2].addEventListener('click', () => { menu.remove(); openModal('add', 'report'); });
 
-  // 외부 클릭 시 닫기
   setTimeout(() => {
     document.addEventListener('click', function handler(e) {
       if (!menu.contains(e.target) && e.target !== btn) {
