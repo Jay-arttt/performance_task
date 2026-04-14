@@ -405,7 +405,6 @@ function buildModalHTML(mode, sheetName, task) {
   let fields = '';
 
   if (sheetName === 'campaign') {
-    const isLive = v('step') === 'Live';
     const stepOptions = [
       ...FLOW_STEPS_BULK.concat(['Live']),
       '키워드 추출', '미디어믹스', 'SA 운영', '랜딩 제작', '기타'
@@ -423,6 +422,8 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
       ${fieldText('driveLabel', '파일명', v('driveLabel'))}`;
+
+  } else if (sheetName === 'common') {
     fields = `
       ${fieldSelect('type', '유형', ['미디어믹스','정산','광고비 확인','광고비 충전','입찰가 관리','기타'].map(s => ({value:s,label:s})), v('type','정산'), true)}
       ${fieldText('title', '업무명', v('title'), true)}
