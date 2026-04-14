@@ -395,6 +395,8 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
       ${fieldText('driveLabel', '파일명', v('driveLabel'))}`;
+
+  } else if (sheetName === 'common') {
     fields = `
       ${fieldSelect('type', '유형', ['미디어믹스','정산','광고비 확인','광고비 충전','입찰가 관리','기타'].map(s => ({value:s,label:s})), v('type','정산'), true)}
       ${fieldText('title', '업무명', v('title'), true)}
@@ -406,8 +408,6 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
       ${fieldText('driveLabel', '파일명', v('driveLabel'))}`;
-
-  } else if (sheetName === 'report') {
     fields = `
       ${fieldSelect('brand', '브랜드', brands.map(b => ({value:b.id,label:b.label})), v('brand'), true)}
       ${fieldSelect('type', '유형', ['데일리','주간','분기','미팅'].map(s => ({value:s,label:s})), v('type','데일리'), true)}
@@ -598,7 +598,7 @@ async function submitModal(mode, sheetName, task) {
     closeModal();
     renderCurrentView();
     showToast('업무가 수정됐어요');
-    callAppsScript({ action:'update', sheetName, id:task.id, row }, { silent: true });
+    callAppsScript({ action:'update', sheetName, id:task.id, row });
   }
 }
 
@@ -615,6 +615,12 @@ function updateLocalDB(sheetName, id, row) {
   const key = {campaign:'campaign',common:'common',report:'report'}[sheetName];
   if (!key) return;
   const idx = DB[key].findIndex(t => String(t.id) === String(id));
-  if (idx === -1) return;
-  DB[key][idx] = {...DB[key][idx], ...row, id:Number(id), hasBid:row.hasBid==='TRUE'||row.hasBid===true, done:row.done==='TRUE'||row.done===true};
+  if (idx === -1) { console.warn('[updateLocalDB] id not found:', id); return; }
+  const numId = Number(id);
+  DB[key][idx] = {
+    ...DB[key][idx], ...row,
+    id: isNaN(numId) ? id : numId,
+    hasBid: row.hasBid === 'TRUE' || row.hasBid === true,
+    done:   row.done   === 'TRUE' || row.done   === true,
+  };
 }
