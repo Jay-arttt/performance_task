@@ -68,6 +68,19 @@ function openModal(mode, sheetName, task = null) {
       e.preventDefault();
       await submitModal(mode, sheetName, task);
     });
+    // 숨기기 버튼
+    overlay.querySelector('#modalHideBtn')?.addEventListener('click', () => {
+      const dbKey = {campaign:'campaign',common:'common',report:'report'}[sheetName];
+      if (!dbKey || !task) return;
+      const t = DB[dbKey].find(x => String(x.id) === String(task.id));
+      if (!t) return;
+      const newHidden = !(t.hidden === true || t.hidden === 'TRUE');
+      t.hidden = newHidden;
+      callAppsScript({ action:'update', sheetName, id:task.id, row:{ hidden: newHidden ? 'TRUE' : 'FALSE' } }, { silent:true });
+      showToast(newHidden ? `"${task.title}" 숨김 처리됐어요` : `"${task.title}" 숨김 해제됐어요`);
+      closeModal();
+      renderCurrentView();
+    });
   }
 
   requestAnimationFrame(() => overlay.classList.add('show'));
@@ -368,6 +381,7 @@ function buildModalHTML(mode, sheetName, task) {
   let fields = '';
 
   if (sheetName === 'campaign') {
+    const isLive = v('step') === 'Live';
     fields = `
       ${fieldText('title', '업무명', v('title'), true)}
       ${fieldSelect('brand', '브랜드', brands.map(b => ({value:b.id,label:b.label})), v('brand'), true)}
@@ -376,13 +390,11 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldSelect('media', '매체', [''].concat(MEDIA_LIST).map(s => ({value:s,label:s||'없음'})), v('media'))}
       ${fieldCheck('hasBid', '입찰가 관리 여부', v('hasBid', false))}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
-      ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), true)}
+      ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), !isLive)}
       ${priorityField}
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
       ${fieldText('driveLabel', '파일명', v('driveLabel'))}`;
-
-  } else if (sheetName === 'common') {
     fields = `
       ${fieldSelect('type', '유형', ['미디어믹스','정산','광고비 확인','광고비 충전','입찰가 관리','기타'].map(s => ({value:s,label:s})), v('type','정산'), true)}
       ${fieldText('title', '업무명', v('title'), true)}
@@ -417,6 +429,9 @@ function buildModalHTML(mode, sheetName, task) {
     <form id="modalForm" autocomplete="off" style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
       <div class="modal-body">${fields}</div>
       <div class="modal-footer">
+        ${isEdit ? `<button type="button" class="modal-btn-hide" id="modalHideBtn" title="이 업무를 숨깁니다 (삭제 아님)">
+          ${v('hidden') === true || v('hidden') === 'TRUE' ? '숨김 해제' : '숨기기'}
+        </button>` : ''}
         <button type="button" class="modal-btn-cancel" onclick="closeModal()">취소</button>
         <button type="submit" class="modal-btn-save" id="modalSaveBtn">저장</button>
       </div>
