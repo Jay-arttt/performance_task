@@ -933,7 +933,6 @@ function renderDailyDay() {
     <div style="margin-left:auto;display:flex;gap:6px;">
       <button class="modal-btn-save" id="dailyAddBtn" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
     </div>`;
-
   document.getElementById('selMemberDaily')?.addEventListener('change', e => { state.member = e.target.value; renderDaily(); });
   document.getElementById('dailyAddBtn')?.addEventListener('click', () => openDailyAddMenu());
   document.getElementById('dailyCompletedToggle')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderDaily(); });
@@ -1294,8 +1293,14 @@ function renderEtc() {
     <select class="ctrl-select" id="selMemberEtc">
       <option value="all">전체</option>
       ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
-    </select>`;
+    </select>
+    <div style="display:flex;align-items:center;gap:4px;margin-left:8px;">
+      <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleEtc">완료</button>
+      <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleEtc">숨김</button>
+    </div>`;
   document.getElementById('selMemberEtc')?.addEventListener('change', e => { state.member = e.target.value; renderEtc(); });
+  document.getElementById('completedToggleEtc')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderEtc(); });
+  document.getElementById('hiddenToggleEtc')?.addEventListener('click', () => { state.showHidden = !state.showHidden; renderEtc(); });
 
   const filtered = DB.common.filter(t =>
     (state.member === 'all' || parseAssignees(t.assignee).includes(state.member)) &&
@@ -1308,16 +1313,9 @@ function renderEtc() {
   container.innerHTML = '';
 
   const addBar = document.createElement('div');
-  addBar.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:12px;';
-  addBar.innerHTML = `
-    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleEtc">완료</button>
-    <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleEtc">숨김</button>
-    <div style="margin-left:auto;">
-      <button class="modal-btn-save" onclick="openModal('add','common')" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
-    </div>`;
+  addBar.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:12px;';
+  addBar.innerHTML = `<button class="modal-btn-save" onclick="openModal('add','common')" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>`;
   container.appendChild(addBar);
-  document.getElementById('completedToggleEtc')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderEtc(); });
-  document.getElementById('hiddenToggleEtc')?.addEventListener('click', () => { state.showHidden = !state.showHidden; renderEtc(); });
 
   Object.entries(ETC_TYPES).forEach(([typeName, style]) => {
     const group = filtered.filter(t => t.type === typeName);
@@ -1388,8 +1386,14 @@ function renderReport() {
     <select class="ctrl-select" id="selMemberRpt">
       <option value="all">전체</option>
       ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
-    </select>`;
+    </select>
+    <div style="display:flex;align-items:center;gap:4px;margin-left:8px;">
+      <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleRpt">완료</button>
+      <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleRpt">숨김</button>
+    </div>`;
   document.getElementById('selMemberRpt')?.addEventListener('change', e => { state.member = e.target.value; renderReport(); });
+  document.getElementById('completedToggleRpt')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderReport(); });
+  document.getElementById('hiddenToggleRpt')?.addEventListener('click', () => { state.showHidden = !state.showHidden; renderReport(); });
 
   const filtered = DB.report.filter(t =>
     (state.brand === 'all' || t.brand === state.brand) &&
@@ -1402,16 +1406,9 @@ function renderReport() {
   grid.innerHTML = '';
 
   const addBar = document.createElement('div');
-  addBar.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:12px;grid-column:1/-1;';
-  addBar.innerHTML = `
-    <button class="completed-toggle ${state.showCompleted?'on':''}" id="completedToggleRpt">완료</button>
-    <button class="completed-toggle ${state.showHidden?'on':''}" id="hiddenToggleRpt">숨김</button>
-    <div style="margin-left:auto;">
-      <button class="modal-btn-save" onclick="openModal('add','report')" style="font-size:12px;padding:6px 14px;">+ 리포트 추가</button>
-    </div>`;
+  addBar.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:12px;grid-column:1/-1;';
+  addBar.innerHTML = `<button class="modal-btn-save" onclick="openModal('add','report')" style="font-size:12px;padding:6px 14px;">+ 리포트 추가</button>`;
   grid.appendChild(addBar);
-  document.getElementById('completedToggleRpt')?.addEventListener('click', () => { state.showCompleted = !state.showCompleted; renderReport(); });
-  document.getElementById('hiddenToggleRpt')?.addEventListener('click', () => { state.showHidden = !state.showHidden; renderReport(); });
   filtered.forEach(t => grid.appendChild(makeReportCard(t)));
 }
 
