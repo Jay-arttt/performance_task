@@ -54,6 +54,7 @@ let state = {
   filterDue: 'all',
   filterPriority: 'all',
   showCompleted: false,
+  showHidden: false,     // 숨긴 업무 기본 숨김
   dailyView: 'day',    // day | week
   resourceCat: '전체',
   viewDate: new Date(),
@@ -149,11 +150,66 @@ function driveLink(url, label) {
   return `<a class="drive-link" href="${url}" target="_blank" rel="noopener">${driveSvg()}<span>${label || '관련 링크'}</span></a>`;
 }
 
+// ── 점세개 (…) 컨텍스트 메뉴 ─────────────
+function openCardMenu(btn, task, sheetName) {
+  document.querySelectorAll('.card-context-menu').forEach(m => m.remove());
+
+  const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.className = 'card-context-menu';
+  menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;left:${rect.left}px;z-index:400;background:var(--color-background-primary);border:.5px solid var(--color-border-secondary);border-radius:10px;padding:4px;min-width:120px;box-shadow:0 4px 16px rgba(0,0,0,.1);`;
+
+  const isHidden = task.hidden === true || task.hidden === 'TRUE';
+  menu.innerHTML = `
+    <button class="ctx-btn" id="ctxEdit">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      수정
+    </button>
+    <button class="ctx-btn ctx-hide" id="ctxHide">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      ${isHidden ? '숨김 해제' : '숨기기'}
+    </button>`;
+
+  document.body.appendChild(menu);
+
+  menu.querySelector('#ctxEdit').addEventListener('click', () => {
+    menu.remove();
+    openModal('edit', sheetName, task);
+  });
+  menu.querySelector('#ctxHide').addEventListener('click', () => {
+    menu.remove();
+    const dbKey = sheetName === 'campaign' ? 'campaign' : sheetName === 'common' ? 'common' : 'report';
+    const t = DB[dbKey].find(x => String(x.id) === String(task.id));
+    if (!t) return;
+    const newHidden = !(t.hidden === true || t.hidden === 'TRUE');
+    t.hidden = newHidden;
+    callAppsScript({ action:'update', sheetName, id:task.id, row:{ hidden: newHidden ? 'TRUE' : 'FALSE' } }, { silent:true });
+    showToast(newHidden ? `"${task.title}" 숨김 처리됐어요` : `"${task.title}" 숨김 해제됐어요`);
+    renderCurrentView();
+  });
+
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 0);
+}
+
+// ── 점세개 버튼 HTML ─────────────────────
+function menuBtn(task, sheetName) {
+  return `<button class="card-menu-btn" data-id="${task.id}" data-sheet="${sheetName}" title="더보기">
+    <span style="letter-spacing:1px;">···</span>
+  </button>`;
+}
+
 // ── 필터 적용 ─────────────────────────────
 function applyFilters(tasks) {
   return tasks.filter(t => {
-    // 완료 업무 숨김
     if (!state.showCompleted && t.status === '완료') return false;
+    if (!state.showHidden && (t.hidden === true || t.hidden === 'TRUE')) return false;
     if (state.brand !== 'all' && t.brand !== state.brand) return false;
     if (state.member !== 'all') {
       const assignees = parseAssignees(t.assignee);
@@ -230,6 +286,9 @@ function renderFlowControls() {
       <button class="completed-toggle ${state.showCompleted ? 'on' : ''}" id="completedToggle">
         ${state.showCompleted ? '완료 숨기기' : '완료 포함'}
       </button>
+      <button class="completed-toggle ${state.showHidden ? 'on' : ''}" id="hiddenToggle" style="color:var(--color-text-tertiary);">
+        ${state.showHidden ? '숨김 해제' : '숨김 포함'}
+      </button>
       <div class="view-toggle">
         <button class="vbtn ${state.flowView==='board'?'active':''}" data-flowview="board">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
@@ -252,6 +311,10 @@ function renderFlowControls() {
   document.getElementById('selPriority').addEventListener('change', e => { state.filterPriority = e.target.value; renderFlow(); });
   document.getElementById('completedToggle')?.addEventListener('click', () => {
     state.showCompleted = !state.showCompleted;
+    renderFlow();
+  });
+  document.getElementById('hiddenToggle')?.addEventListener('click', () => {
+    state.showHidden = !state.showHidden;
     renderFlow();
   });
   document.getElementById('flowControlsWrap').querySelectorAll('.vbtn').forEach(btn => {
@@ -366,7 +429,7 @@ function makeCampaignCard(t) {
   el.dataset.id = t.id; el.draggable = true;
 
   el.innerHTML = `
-    <button class="card-edit-btn" title="수정">✎</button>
+    <button class="card-menu-btn" data-id="${t.id}" data-sheet="campaign" title="더보기"><span style="letter-spacing:1px;">···</span></button>
     <button class="card-urgent-btn ${isUrgent ? 'on' : ''}" title="${isUrgent ? '긴급 해제' : '긴급 설정'}" data-id="${t.id}">!</button>
     <div class="card-brand-bar" style="background:${isUrgent ? '#E24B4A' : brandColor(t.brand)}"></div>
     <div class="card-title">${t.title}</div>
@@ -381,16 +444,16 @@ function makeCampaignCard(t) {
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
       <div style="display:flex;">${renderAvatars(t.assignee)}</div>
-      ${!isLive ? `<span class="due-badge ${due.cls}" style="${t.status==='완료'?'display:none;':''}">${due.label}</span>` : ''}
+      ${!isLive ? `<span class="due-badge ${due.cls}" style="${t.status==='완료'?'display:none;':''}">${due.label}</span>` : `<span class="due-badge ${due.cls}">${due.label || ''}</span>`}
       ${!isLive ? `<label class="done-check campaign-done-check" title="${t.status === '완료' ? '완료 취소' : '완료 체크'}">
         <input type="checkbox" ${t.status === '완료' ? 'checked' : ''} data-id="${t.id}">
         <span class="check-box">${t.status === '완료' ? '✓' : ''}</span>
       </label>` : ''}
     </div>`;
 
-  el.querySelector('.card-edit-btn').addEventListener('click', e => {
+  el.querySelector('.card-menu-btn').addEventListener('click', e => {
     e.stopPropagation();
-    openModal('edit', 'campaign', t);
+    openCardMenu(e.currentTarget, t, 'campaign');
   });
 
   // 완료 체크박스
@@ -498,9 +561,12 @@ function renderFlowList(ft, container) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="max-width:200px;">
-        <span class="list-title-link${isUrgent?' urgent-title':''}" data-id="${t.id}" style="cursor:pointer;font-weight:500;">
-          ${isUrgent ? '<span style="color:#E24B4A;margin-right:3px;">!</span>' : ''}${t.title}
-        </span>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span class="list-title-link${isUrgent?' urgent-title':''}" data-id="${t.id}" style="cursor:pointer;font-weight:500;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+            ${isUrgent ? '<span style="color:#E24B4A;margin-right:3px;">!</span>' : ''}${t.title}
+          </span>
+          <button class="card-menu-btn list-menu-btn" data-id="${t.id}" data-sheet="campaign" title="더보기" style="flex-shrink:0;opacity:0;"><span style="letter-spacing:1px;">···</span></button>
+        </div>
       </td>
       <td class="list-edit-cell" data-field="brand" data-id="${t.id}"><span class="tag" style="${brandTagStyle(bId)}">${bLabel}</span></td>
       <td class="list-edit-cell" data-field="step"  data-id="${t.id}"><span class="tag" style="background:${sp.bg};color:${sp.c}">${t.step}</span></td>
@@ -514,6 +580,12 @@ function renderFlowList(ft, container) {
     tr.querySelector('.list-title-link').addEventListener('click', () => {
       openModal('edit', 'campaign', t);
     });
+    tr.querySelector('.list-menu-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      openCardMenu(e.currentTarget, t, 'campaign');
+    });
+    tr.addEventListener('mouseenter', () => tr.querySelector('.list-menu-btn').style.opacity = '1');
+    tr.addEventListener('mouseleave', () => tr.querySelector('.list-menu-btn').style.opacity = '0');
 
     // 인라인 편집 셀 클릭
     tr.querySelectorAll('.list-edit-cell').forEach(cell => {
@@ -675,7 +747,10 @@ function renderFlowGantt(ft, container) {
 
   const sorted  = [...ft].filter(t => t.startDate).sort((a,b) => new Date(a.startDate)-new Date(b.startDate));
   const noDate  = ft.filter(t => !t.startDate);
-  const allRows = [...sorted, ...noDate];
+  // Live는 날짜 없어도 표시 — sorted 뒤, 일반 noDate 앞에 배치
+  const liveNoDate    = noDate.filter(t => t.step === 'Live');
+  const nonLiveNoDate = noDate.filter(t => t.step !== 'Live');
+  const allRows = [...sorted, ...liveNoDate, ...nonLiveNoDate];
 
   // 업무명에서 · 매체 부분 분리
   function splitTitle(title) {
@@ -710,7 +785,10 @@ function renderFlowGantt(ft, container) {
       const isToday   = sameDay(d, TODAY);
       const isWeekend = d.getDay()===0||d.getDay()===6;
       const bgBase    = isToday ? 'background:var(--color-background-info);' : isWeekend ? 'background:var(--color-background-secondary);' : '';
+
+      // 날짜 없는 경우 — 빈 셀
       if (!start || !end) return `<td style="${bgBase}"></td>`;
+
       const inRange = d >= start && d <= end;
       if (!inRange) return `<td style="${bgBase}"></td>`;
       const isStart = sameDay(d, start);
@@ -730,12 +808,15 @@ function renderFlowGantt(ft, container) {
     const rowBorder = showName && rowIdx > 0 ? 'border-top:1.5px solid var(--color-border-secondary);' : '';
 
     html += `<tr style="cursor:pointer;${rowBorder}" class="gantt-row" data-id="${t.id}">
-      <td style="padding:4px 8px;max-width:${nameW}px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;color:var(--text-1);" title="${t.title}">
-        ${showName ? `
-          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bColor};margin-right:5px;vertical-align:middle;flex-shrink:0;"></span>
-          ${t.priority === '긴급' ? '<span style="color:#E24B4A;font-size:10px;margin-right:3px;font-weight:700;">!</span>' : ''}
-          <span style="font-weight:500;">${baseName}</span>
-        ` : ''}
+      <td style="padding:4px 8px;max-width:${nameW}px;font-size:11px;color:var(--text-1);" title="${t.title}">
+        <div style="display:flex;align-items:center;gap:3px;overflow:hidden;">
+          ${showName ? `
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bColor};flex-shrink:0;"></span>
+            ${t.priority === '긴급' ? '<span style="color:#E24B4A;font-size:10px;font-weight:700;flex-shrink:0;">!</span>' : ''}
+            <span style="font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;">${baseName}</span>
+            <button class="card-menu-btn gantt-menu-btn" data-id="${t.id}" data-sheet="campaign" title="더보기" style="flex-shrink:0;opacity:0;padding:0 3px;font-size:11px;"><span style="letter-spacing:1px;">···</span></button>
+          ` : ''}
+        </div>
       </td>
       <td style="padding:3px;text-align:center;">
         ${mi ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:18px;padding:0 4px;border-radius:4px;font-size:8px;font-weight:700;background:${mi.bg};color:${mi.c};white-space:nowrap;" title="${t.media}">${mi.icon}</span>` : ''}
@@ -758,6 +839,16 @@ function renderFlowGantt(ft, container) {
       const t = DB.campaign.find(x => String(x.id) === String(row.dataset.id));
       if (t) openModal('edit', 'campaign', t);
     });
+    const menuBtn = row.querySelector('.gantt-menu-btn');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const t = DB.campaign.find(x => String(x.id) === String(menuBtn.dataset.id));
+        if (t) openCardMenu(menuBtn, t, 'campaign');
+      });
+      row.addEventListener('mouseenter', () => menuBtn.style.opacity = '1');
+      row.addEventListener('mouseleave', () => menuBtn.style.opacity = '0');
+    }
   });
 }
 
@@ -1150,7 +1241,7 @@ function makeEtcCard(t, style) {
   const isUrgent = t.priority === '긴급';
   el.className = 'etc-card' + (t.done ? ' done-card' : '') + (isUrgent ? ' urgent-card' : '');
   el.innerHTML = `
-    <button class="card-edit-btn" title="수정">✎</button>
+    <button class="card-menu-btn" data-id="${t.id}" data-sheet="common" title="더보기"><span style="letter-spacing:1px;">···</span></button>
     <button class="card-urgent-btn ${isUrgent ? 'on' : ''}" title="${isUrgent ? '긴급 해제' : '긴급 설정'}" data-id="${t.id}">!</button>
     <div class="etc-card-icon" style="background:${style.bg};color:${style.c}">${style.icon}</div>
     <div class="card-title">${t.title}</div>
@@ -1164,9 +1255,9 @@ function makeEtcCard(t, style) {
       <span class="due-badge ${due.cls}" style="${t.done?'display:none;':''}">${due.label}</span>
       <label class="done-check"><input type="checkbox" ${t.done?'checked':''} data-id="${t.id}"><span class="check-box">${t.done?'✓':''}</span></label>
     </div>`;
-  el.querySelector('.card-edit-btn').addEventListener('click', e => {
+  el.querySelector('.card-menu-btn').addEventListener('click', e => {
     e.stopPropagation();
-    openModal('edit', 'common', t);
+    openCardMenu(e.currentTarget, t, 'common');
   });
   el.querySelector('.card-urgent-btn').addEventListener('click', async e => {
     e.stopPropagation();
@@ -1228,7 +1319,7 @@ function makeReportCard(t) {
   const isUrgent = t.priority === '긴급';
   el.className = 'report-card' + (t.done ? ' done-card' : '') + (isUrgent ? ' urgent-card' : '');
   el.innerHTML = `
-    <button class="card-edit-btn" title="수정">✎</button>
+    <button class="card-menu-btn" data-id="${t.id}" data-sheet="report" title="더보기"><span style="letter-spacing:1px;">···</span></button>
     <button class="card-urgent-btn ${isUrgent ? 'on' : ''}" title="${isUrgent ? '긴급 해제' : '긴급 설정'}" data-id="${t.id}">!</button>
     <div class="report-card-top">
       <div class="report-icon" style="background:${rs.bg};color:${rs.c}">${t.type[0]}</div>
@@ -1244,9 +1335,9 @@ function makeReportCard(t) {
       <span class="due-badge ${due.cls}" style="${t.done?'display:none;':''}">${due.label}</span>
       <label class="done-check"><input type="checkbox" ${t.done?'checked':''} data-id="${t.id}"><span class="check-box">${t.done?'✓':''}</span></label>
     </div>`;
-  el.querySelector('.card-edit-btn').addEventListener('click', e => {
+  el.querySelector('.card-menu-btn').addEventListener('click', e => {
     e.stopPropagation();
-    openModal('edit', 'report', t);
+    openCardMenu(e.currentTarget, t, 'report');
   });
   el.querySelector('.card-urgent-btn').addEventListener('click', async e => {
     e.stopPropagation();
