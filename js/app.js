@@ -460,11 +460,11 @@ function makeCampaignCard(t) {
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
       <div style="display:flex;">${renderAvatars(t.assignee)}</div>
-      ${!isLive ? `<span class="due-badge ${due.cls}" style="${t.status==='완료'?'display:none;':''}">${due.label}</span>` : `<span class="due-badge ${due.cls}">${due.label || ''}</span>`}
-      ${!isLive ? `<label class="done-check campaign-done-check" title="${t.status === '완료' ? '완료 취소' : '완료 체크'}">
+      <span class="due-badge ${due.cls}" style="${t.status==='완료'?'display:none;':''}">${due.label || ''}</span>
+      <label class="done-check campaign-done-check" title="${t.status === '완료' ? '완료 취소' : '완료 체크'}">
         <input type="checkbox" ${t.status === '완료' ? 'checked' : ''} data-id="${t.id}">
         <span class="check-box">${t.status === '완료' ? '✓' : ''}</span>
-      </label>` : ''}
+      </label>
     </div>`;
 
   el.querySelector('.card-menu-btn').addEventListener('click', e => {
@@ -839,13 +839,13 @@ function renderFlowGantt(ft, container) {
     // 업무명 구분선 — 새 업무 시작 시 위쪽에 얇은 선
     const rowBorder = showName && rowIdx > 0 ? 'border-top:1.5px solid var(--color-border-secondary);' : '';
 
-    html += `<tr style="cursor:pointer;${rowBorder}" class="gantt-row" data-id="${t.id}">
+    html += `<tr style="cursor:pointer;${rowBorder}${t.status==='완료'?'opacity:.55;':''}" class="gantt-row" data-id="${t.id}">
       <td style="padding:4px 8px;max-width:${nameW}px;font-size:11px;color:var(--text-1);" title="${t.title}">
         <div style="display:flex;align-items:center;gap:3px;overflow:hidden;">
           ${showName ? `
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bColor};flex-shrink:0;"></span>
             ${t.priority === '긴급' ? '<span style="color:#E24B4A;font-size:10px;font-weight:700;flex-shrink:0;">!</span>' : ''}
-            <span style="font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;">${baseName}</span>
+            <span style="font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;${t.status==='완료'?'text-decoration:line-through;color:var(--color-text-tertiary);':''}">${baseName}</span>
             <button class="card-menu-btn gantt-menu-btn" data-id="${t.id}" data-sheet="campaign" title="더보기" style="flex-shrink:0;opacity:0;padding:0 3px;font-size:11px;"><span style="letter-spacing:1px;">···</span></button>
           ` : ''}
         </div>
