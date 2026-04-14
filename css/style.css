@@ -692,7 +692,11 @@ button { font-family: inherit; cursor: pointer; }
 .etc-card:hover .card-menu-btn,
 .report-card:hover .card-menu-btn{display:flex;}
 .card-urgent-btn{position:absolute;top:6px;right:32px;}
-.ctx-btn{display:flex;align-items:center;gap:7px;width:100%;padding:7px 10px;font-size:12px;background:transparent;border:none;border-radius:7px;cursor:pointer;font-family:inherit;color:var(--color-text-primary);text-align:left;}
-.ctx-btn:hover{background:var(--color-background-secondary);}
-.ctx-hide{color:var(--color-text-secondary);}
-.ctx-hide:hover{color:var(--danger);}
+.ctx-btn{display:flex;align-items:center;gap:7px;width:100%;padding:7px 10px;font-size:12px;background:#fff;border:none;border-radius:7px;cursor:pointer;font-family:inherit;color:#1A1917;text-align:left;}
+.ctx-btn:hover{background:#F2F1EE;}
+.ctx-hide{color:#5C5B57;}
+.ctx-hide:hover{color:#E24B4A;}
+@media (prefers-color-scheme:dark){
+  .ctx-btn{background:#242228;color:#F0EEE8;}
+  .ctx-btn:hover{background:#2E2C33;}
+}
