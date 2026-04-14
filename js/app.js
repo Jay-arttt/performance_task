@@ -1458,7 +1458,6 @@ function makeReportCard(t) {
     showToast(task.done ? `"${task.title}" 완료됐어요` : `"${task.title}" 취소됐어요`);
     renderReport();
   });
-  });
   return el;
 }
 
