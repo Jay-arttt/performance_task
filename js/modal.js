@@ -68,6 +68,15 @@ function openModal(mode, sheetName, task = null) {
       e.preventDefault();
       await submitModal(mode, sheetName, task);
     });
+
+    // 반복 주기 선택 시 종료일 필드 토글
+    const repeatSel = overlay.querySelector('#repeatSelect');
+    const repeatRange = overlay.querySelector('#repeatRangeGroup');
+    if (repeatSel && repeatRange) {
+      repeatSel.addEventListener('change', () => {
+        repeatRange.style.display = repeatSel.value ? 'block' : 'none';
+      });
+    }
     // 숨기기 버튼
     overlay.querySelector('#modalHideBtn')?.addEventListener('click', () => {
       const dbKey = {campaign:'campaign',common:'common',report:'report'}[sheetName];
@@ -605,7 +614,33 @@ async function submitModal(mode, sheetName, task) {
   }
 
   if (mode === 'add') {
-    // 임시 id 부여 → 화면 즉시 갱신 → 백그라운드 저장 → 실제 id로 교체
+    const repeat    = row.repeat || '';
+    const repeatEnd = row.repeatEnd || '';
+    delete row.repeatEnd;
+
+    // 반복 업무: 기간 내 날짜 미리 생성
+    if (repeat && repeatEnd && (sheetName === 'common' || sheetName === 'report')) {
+      const startStr = row.due || todayStr();
+      const dates    = getRepeatDates(repeat, startStr, repeatEnd, row.due);
+
+      if (!dates.length) { showToast('생성할 날짜가 없어요 (평일 기준)'); return; }
+
+      // 원본 템플릿 저장 (반복 설정 유지)
+      row.id = 'temp_' + Date.now();
+      addToLocalDB(sheetName, row);
+      closeModal();
+      renderCurrentView();
+
+      // 반복 카드 일괄 생성
+      const recurRow = { ...row, repeat: '' };
+      createRecurringTasks(sheetName, recurRow, dates).then(() => renderCurrentView());
+
+      // 원본 Sheets 저장
+      callAppsScript({ action: 'add', sheetName, row });
+      return;
+    }
+
+    // 일반 추가
     row.id = 'temp_' + Date.now();
     addToLocalDB(sheetName, row);
     closeModal();
@@ -613,7 +648,6 @@ async function submitModal(mode, sheetName, task) {
     showToast('업무가 추가됐어요');
     callAppsScript({ action:'add', sheetName, row }).then(result => {
       if (result?.id) {
-        // 임시 id를 실제 id로 교체
         const key = {campaign:'campaign',common:'common',report:'report'}[sheetName];
         if (key) {
           const t = DB[key].find(x => String(x.id) === String(row.id));
