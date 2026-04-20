@@ -618,10 +618,13 @@ async function submitModal(mode, sheetName, task) {
     const repeatEnd = row.repeatEnd || '';
     delete row.repeatEnd;
 
+    console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd, 'sheetName:', sheetName);
+
     // 반복 업무: 기간 내 날짜 미리 생성
     if (repeat && repeatEnd && (sheetName === 'common' || sheetName === 'report')) {
       const startStr = row.due || todayStr();
       const dates    = getRepeatDates(repeat, startStr, repeatEnd, row.due);
+      console.log('[반복업무] 생성 날짜:', dates);
 
       if (!dates.length) { showToast('생성할 날짜가 없어요 (평일 기준)'); return; }
 
