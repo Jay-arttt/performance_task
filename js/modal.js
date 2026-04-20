@@ -439,7 +439,7 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldSelect('media', '매체', [''].concat(MEDIA_LIST).map(s => ({value:s,label:s||'없음'})), v('media'))}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
       ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), true)}
-      ${fieldRepeat(v('repeat'))}
+      ${fieldRepeat(v('repeat'), v('repeatEnd'))}
       ${priorityField}
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
@@ -452,7 +452,7 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldText('title', '업무명', v('title'), true)}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
       ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), true)}
-      ${fieldRepeat(v('repeat'))}
+      ${fieldRepeat(v('repeat'), v('repeatEnd'))}
       ${priorityField}
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
@@ -656,7 +656,9 @@ async function submitModal(mode, sheetName, task) {
       }
     });
   } else {
-    // 수정: 로컬 먼저 반영 → 화면 갱신 → 백그라운드 저장
+    // 수정: repeatEnd는 Sheets 컬럼이 아니므로 제거
+    delete row.repeatEnd;
+    // 로컬 먼저 반영 → 화면 갱신 → 백그라운드 저장
     updateLocalDB(sheetName, task.id, row);
     closeModal();
     renderCurrentView();
