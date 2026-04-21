@@ -109,7 +109,7 @@ function fieldRepeat(repeatValue = '', repeatEndValue = '') {
     return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
   })();
 
-  return `<div class="field-group" id="repeatGroup">
+  return `<div class="field-group">
     <label class="field-label">반복 주기</label>
     <select class="field-input" name="repeat" id="repeatSelect">
       <option value="" ${!repeatValue?'selected':''}>반복 없음</option>
@@ -117,14 +117,13 @@ function fieldRepeat(repeatValue = '', repeatEndValue = '') {
       <option value="weekly"  ${repeatValue==='weekly' ?'selected':''}>매주 (같은 요일)</option>
       <option value="monthly" ${repeatValue==='monthly'?'selected':''}>매월 (같은 날짜)</option>
     </select>
-  </div>
-  <div class="field-group" id="repeatRangeGroup" style="overflow:hidden;max-height:${repeatValue?'100px':'0'};transition:max-height .2s;opacity:${repeatValue?'1':'0'};">
-    <label class="field-label">반복 종료일
-      <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">최대 2달 (${maxDate}까지)</span>
-    </label>
-    <input class="field-input" type="date" name="repeatEnd" id="repeatEndInput"
-      value="${repeatEndValue || ''}"
-      min="${today}" max="${maxDate}"
-      placeholder="반복 종료일 선택">
+    <div id="repeatRangeGroup" style="margin-top:8px;overflow:hidden;max-height:${repeatValue?'80px':'0'};transition:max-height .2s ease;opacity:${repeatValue?'1':'0'};">
+      <label class="field-label" style="margin-bottom:4px;">반복 종료일
+        <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">최대 2달 (${maxDate}까지)</span>
+      </label>
+      <input class="field-input" type="date" id="repeatEndInput"
+        value="${repeatEndValue || ''}"
+        min="${today}" max="${maxDate}">
+    </div>
   </div>`;
 }
