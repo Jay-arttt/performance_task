@@ -118,7 +118,7 @@ function fieldRepeat(repeatValue = '', repeatEndValue = '') {
       <option value="monthly" ${repeatValue==='monthly'?'selected':''}>매월 (같은 날짜)</option>
     </select>
   </div>
-  <div class="field-group" id="repeatRangeGroup" style="display:${repeatValue?'block':'none'};">
+  <div class="field-group" id="repeatRangeGroup" style="overflow:hidden;max-height:${repeatValue?'100px':'0'};transition:max-height .2s;opacity:${repeatValue?'1':'0'};">
     <label class="field-label">반복 종료일
       <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">최대 2달 (${maxDate}까지)</span>
     </label>

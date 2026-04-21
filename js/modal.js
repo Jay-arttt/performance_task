@@ -74,7 +74,13 @@ function openModal(mode, sheetName, task = null) {
     const repeatRange = overlay.querySelector('#repeatRangeGroup');
     if (repeatSel && repeatRange) {
       repeatSel.addEventListener('change', () => {
-        repeatRange.style.display = repeatSel.value ? 'block' : 'none';
+        if (repeatSel.value) {
+          repeatRange.style.maxHeight = '100px';
+          repeatRange.style.opacity = '1';
+        } else {
+          repeatRange.style.maxHeight = '0';
+          repeatRange.style.opacity = '0';
+        }
       });
     }
     // 숨기기 버튼
@@ -615,7 +621,8 @@ async function submitModal(mode, sheetName, task) {
 
   if (mode === 'add') {
     const repeat    = row.repeat || '';
-    const repeatEnd = row.repeatEnd || '';
+    // display:none 상태에서 FormData가 값을 못 읽으므로 직접 읽기
+    const repeatEnd = form.querySelector('#repeatEndInput')?.value || '';
     delete row.repeatEnd;
 
     console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd, 'sheetName:', sheetName);
