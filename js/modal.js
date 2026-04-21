@@ -117,16 +117,21 @@ function openModal(mode, sheetName, task = null) {
     });
 
     // 반복 주기 선택 시 종료일 필드 토글
-    const repeatSel = overlay.querySelector('#repeatSelect');
+    const repeatSel   = overlay.querySelector('#repeatSelect');
     const repeatRange = overlay.querySelector('#repeatRangeGroup');
     if (repeatSel && repeatRange) {
+      // 초기 상태 반영
+      if (repeatSel.value) {
+        repeatRange.style.maxHeight = '80px';
+        repeatRange.style.opacity   = '1';
+      }
       repeatSel.addEventListener('change', () => {
         if (repeatSel.value) {
-          repeatRange.style.maxHeight = '100px';
-          repeatRange.style.opacity = '1';
+          repeatRange.style.maxHeight = '80px';
+          repeatRange.style.opacity   = '1';
         } else {
           repeatRange.style.maxHeight = '0';
-          repeatRange.style.opacity = '0';
+          repeatRange.style.opacity   = '0';
         }
       });
     }
@@ -666,11 +671,11 @@ async function submitModal(mode, sheetName, task) {
       'sheetName:', sheetName);
 
     // 반복 업무: 기간 내 날짜 미리 생성
-    if (repeat && repeatEnd && (sheetName === 'common' || sheetName === 'report')) {
+    if (repeat && (sheetName === 'common' || sheetName === 'report')) {
+      if (!repeatEnd) { showToast('반복 종료일을 입력해주세요'); return; }
       const startStr = row.due || todayStr();
       const dates    = getRepeatDates(repeat, startStr, repeatEnd, row.due);
       console.log('[반복업무] 생성 날짜:', dates);
-
       if (!dates.length) { showToast('생성할 날짜가 없어요 (평일 기준)'); return; }
 
       // 원본 템플릿 저장 (반복 설정 유지)
