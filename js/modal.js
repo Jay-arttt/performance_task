@@ -620,12 +620,15 @@ async function submitModal(mode, sheetName, task) {
   }
 
   if (mode === 'add') {
-    const repeat    = row.repeat || '';
-    // display:none 상태에서 FormData가 값을 못 읽으므로 직접 읽기
-    const repeatEnd = form.querySelector('#repeatEndInput')?.value || '';
+    const repeat = row.repeat || '';
+    // ID, name 두 가지 방법으로 모두 시도
+    const repeatEndEl = document.getElementById('repeatEndInput')
+      || document.querySelector('[name="repeatEnd"]')
+      || form.querySelector('[name="repeatEnd"]');
+    const repeatEnd = repeatEndEl?.value || '';
     delete row.repeatEnd;
 
-    console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd, 'sheetName:', sheetName);
+    console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd, 'el:', repeatEndEl, 'sheetName:', sheetName);
 
     // 반복 업무: 기간 내 날짜 미리 생성
     if (repeat && repeatEnd && (sheetName === 'common' || sheetName === 'report')) {
