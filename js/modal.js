@@ -674,7 +674,9 @@ async function submitModal(mode, sheetName, task) {
     if (repeat && (sheetName === 'common' || sheetName === 'report')) {
       if (!repeatEnd) { showToast('반복 종료일을 입력해주세요'); return; }
       const startStr = row.due || todayStr();
-      const dates    = getRepeatDates(repeat, startStr, repeatEnd, row.due);
+      const allDates = getRepeatDates(repeat, startStr, repeatEnd, row.due);
+      // 첫날은 원본 템플릿이 커버하므로 제외
+      const dates = allDates.filter(d => d !== startStr);
       console.log('[반복업무] 생성 날짜:', dates);
       if (!dates.length) { showToast('생성할 날짜가 없어요 (평일 기준)'); return; }
 
