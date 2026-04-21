@@ -12,7 +12,54 @@ function warmUpAppsScript() {
   fetch(CONFIG.APPS_SCRIPT_URL, { method: 'GET' }).catch(() => {});
 }
 
-// ── API 호출 (낙관적 업데이트) ───────────
+// ── 반복 주기 필드 (recurring.js 캐시 우회용) ──
+function fieldRepeat(repeatValue = '', repeatEndValue = '') {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+  const maxDate = (() => {
+    const d = new Date(); d.setMonth(d.getMonth() + 2);
+    return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+  })();
+  return `<div class="field-group">
+    <label class="field-label">반복 주기</label>
+    <select class="field-input" id="repeatSelect">
+      <option value="" ${!repeatValue?'selected':''}>반복 없음</option>
+      <option value="daily"   ${repeatValue==='daily'  ?'selected':''}>매일 (평일 월~금)</option>
+      <option value="weekly"  ${repeatValue==='weekly' ?'selected':''}>매주 (같은 요일)</option>
+      <option value="monthly" ${repeatValue==='monthly'?'selected':''}>매월 (같은 날짜)</option>
+    </select>
+    <div id="repeatRangeGroup" style="margin-top:8px;overflow:hidden;max-height:${repeatValue?'80px':'0'};transition:max-height .2s;opacity:${repeatValue?'1':'0'};">
+      <label class="field-label" style="margin-bottom:4px;">반복 종료일
+        <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">최대 2달 (${maxDate}까지)</span>
+      </label>
+      <input class="field-input" type="date" id="repeatEndInput"
+        value="${repeatEndValue || ''}" min="${today}" max="${maxDate}">
+    </div>
+  </div>`;
+}
+
+// ── 반복 주기 날짜 목록 생성 ──────────────
+function getRepeatDates(repeat, startStr, endStr, templateDue) {
+  function parseLocal(s) { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+  function isWeekday(d) { return d.getDay()!==0 && d.getDay()!==6; }
+  function toStr(d) { return d.toLocaleDateString('en-CA',{timeZone:'Asia/Seoul'}); }
+  const start = parseLocal(startStr), end = parseLocal(endStr);
+  const dates = [];
+  if (repeat === 'daily') {
+    const cur = new Date(start);
+    while (cur <= end) { if (isWeekday(cur)) dates.push(toStr(cur)); cur.setDate(cur.getDate()+1); }
+  } else if (repeat === 'weekly') {
+    const targetDay = templateDue ? parseLocal(templateDue).getDay() : start.getDay();
+    const cur = new Date(start);
+    while (cur.getDay() !== targetDay) cur.setDate(cur.getDate()+1);
+    while (cur <= end) { if (isWeekday(cur)) dates.push(toStr(cur)); cur.setDate(cur.getDate()+7); }
+  } else if (repeat === 'monthly') {
+    const targetDate = templateDue ? parseLocal(templateDue).getDate() : start.getDate();
+    const cur = new Date(start.getFullYear(), start.getMonth(), targetDate);
+    if (cur < start) cur.setMonth(cur.getMonth()+1);
+    while (cur <= end) { if (isWeekday(cur)) dates.push(toStr(cur)); cur.setMonth(cur.getMonth()+1); }
+  }
+  return dates;
+}
 // fire-and-forget: 화면은 즉시 갱신, Sheets 저장은 백그라운드에서
 function callAppsScript(payload, { silent = false } = {}) {
   if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
@@ -620,15 +667,14 @@ async function submitModal(mode, sheetName, task) {
   }
 
   if (mode === 'add') {
-    const repeat = row.repeat || '';
-    // ID, name 두 가지 방법으로 모두 시도
-    const repeatEndEl = document.getElementById('repeatEndInput')
-      || document.querySelector('[name="repeatEnd"]')
-      || form.querySelector('[name="repeatEnd"]');
-    const repeatEnd = repeatEndEl?.value || '';
+    // repeat/repeatEnd는 id로 직접 읽기 (FormData/캐시 우회)
+    const repeat    = document.getElementById('repeatSelect')?.value || '';
+    const repeatEnd = document.getElementById('repeatEndInput')?.value || '';
+    delete row.repeat;
     delete row.repeatEnd;
+    if (repeat) row.repeat = repeat;
 
-    console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd, 'el:', repeatEndEl, 'sheetName:', sheetName);
+    console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd, 'sheetName:', sheetName);
 
     // 반복 업무: 기간 내 날짜 미리 생성
     if (repeat && repeatEnd && (sheetName === 'common' || sheetName === 'report')) {
