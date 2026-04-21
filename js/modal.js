@@ -600,20 +600,6 @@ function fieldAssignee(name, label, value = '', members = [], required = false) 
     <div class="assignee-picker" id="assigneePicker">${checkboxes}</div>
   </div>`;
 }
-function fieldRepeat(value = '') {
-  return `<div class="field-group">
-    <label class="field-label">반복 주기
-      <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;margin-left:4px;">설정 시 대시보드 로드 시 자동 생성</span>
-    </label>
-    <select class="field-input" name="repeat">
-      <option value="" ${!value?'selected':''}>반복 없음</option>
-      <option value="daily"   ${value==='daily'  ?'selected':''}>매일</option>
-      <option value="weekly"  ${value==='weekly' ?'selected':''}>매주 (같은 요일)</option>
-      <option value="monthly" ${value==='monthly'?'selected':''}>매월 (같은 날짜)</option>
-    </select>
-  </div>`;
-}
-
 // ── 날짜 퀵 버튼 이벤트 ──────────────────
 document.addEventListener('click', e => {
   const btn = e.target.closest('.date-quick-btn');
@@ -667,14 +653,17 @@ async function submitModal(mode, sheetName, task) {
   }
 
   if (mode === 'add') {
-    // repeat/repeatEnd는 id로 직접 읽기 (FormData/캐시 우회)
-    const repeat    = document.getElementById('repeatSelect')?.value || '';
-    const repeatEnd = document.getElementById('repeatEndInput')?.value || '';
+    // form 안에서 직접 찾기
+    const repeat    = form.querySelector('#repeatSelect')?.value || '';
+    const repeatEnd = form.querySelector('#repeatEndInput')?.value || '';
     delete row.repeat;
     delete row.repeatEnd;
     if (repeat) row.repeat = repeat;
 
-    console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd, 'sheetName:', sheetName);
+    console.log('[반복업무] repeat:', repeat, 'repeatEnd:', repeatEnd,
+      'selectEl:', form.querySelector('#repeatSelect'),
+      'endEl:', form.querySelector('#repeatEndInput'),
+      'sheetName:', sheetName);
 
     // 반복 업무: 기간 내 날짜 미리 생성
     if (repeat && repeatEnd && (sheetName === 'common' || sheetName === 'report')) {
