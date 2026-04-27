@@ -233,10 +233,6 @@ function applyFilters(tasks) {
       const assignees = parseAssignees(t.assignee);
       if (!assignees.includes(state.member)) return false;
     }
-    if (state.filterMedia !== 'all') {
-      if (state.filterMedia === '네이버' && !t.media?.startsWith('네이버')) return false;
-      if (state.filterMedia !== '네이버' && t.media !== state.filterMedia) return false;
-    }
     if (state.filterDue !== 'all') {
       const d = new Date(t.due); d.setHours(0,0,0,0);
       const diff = Math.round((d - TODAY) / 86400000);
@@ -426,14 +422,11 @@ function renderFlowBoard(ft, container) {
 
 function makeCampaignCard(t) {
   const due = dueInfo(t.due);
-  const isLive = t.step === 'Live';
   const isUrgent = t.priority === '긴급';
-  const ms = MEDIA_STYLE[t.media] || null;
   const ss = STATUS_STYLE[t.status] || STATUS_STYLE['진행중'];
-  const isBid = t.hasBid && BID_MEDIA.includes(t.media);
 
   const el = document.createElement('div');
-  el.className = 'task-card' + (isLive ? ' live-card' : '') + (isUrgent ? ' urgent-card' : '') + (t.status === '완료' ? ' status-done' : '');
+  el.className = 'task-card' + (isUrgent ? ' urgent-card' : '') + (t.status === '완료' ? ' status-done' : '');
   el.dataset.id = t.id; el.draggable = true;
 
   el.innerHTML = `
@@ -444,8 +437,6 @@ function makeCampaignCard(t) {
     <div class="card-tags">
       ${isUrgent ? `<span class="tag urgent-tag">긴급</span>` : ''}
       ${t.status === '컨펌대기' ? `<span class="tag" style="background:${ss.bg};color:${ss.c}">컨펌대기</span>` : ''}
-      ${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : ''}
-      ${isBid ? `<span class="tag bid-tag">입찰가</span>` : ''}
       ${state.brand === 'all' ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : ''}
     </div>
     ${t.notes ? `<div class="card-notes-preview">${t.notes}</div>` : ''}
@@ -743,12 +734,12 @@ function renderFlowGantt(ft, container) {
     <thead>
       <tr>
         <th style="width:${nameW}px;text-align:left;padding:5px 8px;">업무</th>
+        <th style="width:28px;text-align:center;font-size:10px;">완료</th>
         <th style="width:${memberW}px;text-align:center;">담당</th>
         ${dates.map((d,i) => {          const isToday   = sameDay(d, TODAY);
           const isWeekend = d.getDay()===0||d.getDay()===6;
           return `<th style="width:${colW}px;text-align:center;${isToday?'background:var(--color-background-info);color:var(--color-text-info);font-weight:600;':''}${isWeekend?'opacity:.45':''}">${dayLabels[i]}<br><span style="font-size:9px;">${dayNames[d.getDay()]}</span></th>`;
         }).join('')}
-        <th style="width:28px;"></th>
       </tr>
     </thead>
     <tbody>`;
@@ -772,11 +763,9 @@ function renderFlowGantt(ft, container) {
 
   allRows.forEach((t, rowIdx) => {
     const isLive    = t.step === 'Live';
-    const bId       = String(t.brand || '');
-    const bColor    = brandColor(bId);
-    const stepColor = STEP_COLORS[t.step] || bColor;
+    const bId    = String(t.brand || '');
+    const bColor = brandColor(bId);
     const { base: baseName } = splitTitle(t.title);
-    const mi = MEDIA_ICON[t.media] || null;
 
     // 이전 행과 기본 업무명 같으면 이름 숨김
     const showName = baseName !== prevBaseName;
@@ -784,7 +773,6 @@ function renderFlowGantt(ft, container) {
 
     const start = new Date(t.startDate || t.due || '');
     const end   = t.due ? new Date(t.due) : null;
-    if (start && !t.startDate && !t.due) { /* 날짜 아예 없음 */ }
     if (!isNaN(start)) start.setHours(0,0,0,0);
     if (end) end.setHours(0,0,0,0);
     const validStart = !isNaN(start.getTime()) ? start : null;
@@ -798,23 +786,21 @@ function renderFlowGantt(ft, container) {
       const isWeekend = d.getDay()===0||d.getDay()===6;
       const bgBase    = isToday ? 'background:var(--color-background-info);' : isWeekend ? 'background:var(--color-background-secondary);' : '';
 
-      // 날짜 없는 경우 — 빈 셀
       if (!validStart || !validEnd) return `<td style="${bgBase}"></td>`;
 
       const inRange = d >= validStart && d <= validEnd;
       if (!inRange) return `<td style="${bgBase}"></td>`;
       const isStart = sameDay(d, validStart);
       const isEnd   = sameDay(d, validEnd);
+      const radius  = `${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
+      const barStyle = `background:${bColor};height:20px;margin:2px 1px;border-radius:${radius};display:flex;align-items:center;justify-content:center;overflow:hidden;`;
       const midDate = new Date(validStart.getTime() + (validEnd.getTime() - validStart.getTime()) / 2);
       midDate.setHours(0,0,0,0);
-      const isMid   = showLabel && sameDay(d, midDate);
-      const radius  = `${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
-      const barStyle = `background:${stepColor};height:20px;margin:2px 1px;border-radius:${radius};display:flex;align-items:center;justify-content:center;overflow:hidden;`;
-      const label   = isMid ? `<span style="font-size:9px;font-weight:600;color:white;white-space:nowrap;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none;">${t.step}</span>` : '';
+      const label = showLabel && sameDay(d, midDate)
+        ? `<span style="font-size:9px;font-weight:600;color:white;white-space:nowrap;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none;">${t.title}</span>`
+        : '';
       return `<td style="${bgBase}padding:0;"><div style="${barStyle}">${label}</div></td>`;
     }).join('');
-
-    const stepStyle = `background:${stepColor}22;color:${stepColor};font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500;white-space:nowrap;`;
 
     // 업무명 구분선 — 새 업무 시작 시 위쪽에 얇은 선
     const rowBorder = showName && rowIdx > 0 ? 'border-top:1.5px solid var(--color-border-secondary);' : '';
@@ -831,15 +817,15 @@ function renderFlowGantt(ft, container) {
           ` : ''}
         </div>
       </td>
-      <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 17)}</div></td>
-      ${cells}
       <td style="padding:4px;text-align:center;" onclick="event.stopPropagation()">
         <label class="done-check campaign-done-check" style="margin:0 auto;">
           <input type="checkbox" ${t.status==='완료'?'checked':''} data-id="${t.id}">
           <span class="check-box" style="width:15px;height:15px;font-size:9px;">${t.status==='완료'?'✓':''}</span>
         </label>
       </td>
-    </tr>`;
+      <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 17)}</div></td>
+      ${cells}
+      </tr>`;
   });
 
   html += `</tbody></table></div></div>`;
@@ -1152,21 +1138,17 @@ function renderWeekly() {
 
 function makeDailyCard(t) {
   const due      = dueInfo(t.due);
-  const isLive   = t.step === 'Live';
   const isReport = t._src === 'report';
   const isEtc    = t._src === 'common';
   const isUrgent = t.priority === '긴급';
-  const ms = t.media ? MEDIA_STYLE[t.media] || null : null;
   const rs = isReport ? REPORT_STYLE[t.type] || null : null;
   const es = isEtc ? ETC_TYPES[t.type] || ETC_TYPES['기타'] : null;
-  const ss = t.status ? STATUS_STYLE[t.status] || null : null;
-  const stepLabel = isReport ? t.type : isEtc ? (es?.label || '공통') : isLive ? 'Live' : (t.step || '');
+  const typeLabel = isReport ? t.type : isEtc ? (es?.label || '공통') : '';
 
-  // 완료 여부 판단 (campaign=status, common/report=done)
   const isDone = t._src === 'campaign' ? t.status === '완료' : (t.done === true || t.done === 'TRUE');
 
   const el = document.createElement('div');
-  el.className = 'daily-card' + (isLive ? ' live-card' : '') + (isUrgent ? ' urgent-card' : '') + (isDone ? ' done-card' : '');
+  el.className = 'daily-card' + (isUrgent ? ' urgent-card' : '') + (isDone ? ' done-card' : '');
   el.draggable = true;
   el.dataset.id  = String(t.id);
   el.dataset.src = t._src;
@@ -1183,12 +1165,11 @@ function makeDailyCard(t) {
       ${t.brand ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : '<span class="tag brand-tag">공통</span>'}
       ${rs ? `<span class="tag" style="background:${rs.bg};color:${rs.c}">${t.type}</span>` : ''}
       ${es && isEtc ? `<span class="tag" style="background:${es.bg};color:${es.c}">${es.label}</span>` : ''}
-      ${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : ''}
     </div>
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
-      <span class="due-badge ${due.cls}" style="${isDone?'display:none;':''}">${isLive?'운영중':due.label}</span>
-      <span class="step-label">${stepLabel}</span>
+      <span class="due-badge ${due.cls}" style="${isDone?'display:none;':''}">${due.label}</span>
+      ${typeLabel ? `<span class="step-label">${typeLabel}</span>` : ''}
       <label class="done-check daily-done-check" style="margin-left:auto;" title="${isDone?'완료 취소':'완료 체크'}">
         <input type="checkbox" ${isDone?'checked':''} data-id="${t.id}" data-src="${t._src}">
         <span class="check-box">${isDone?'✓':''}</span>
