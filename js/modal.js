@@ -678,24 +678,15 @@ async function submitModal(mode, sheetName, task) {
     if (repeat && (sheetName === 'common' || sheetName === 'report' || sheetName === 'campaign')) {
       if (!repeatEnd) { showToast('반복 종료일을 입력해주세요'); return; }
       const startStr = row.due || todayStr();
-      const allDates = getRepeatDates(repeat, startStr, repeatEnd, row.due);
-      // 첫날은 원본 템플릿이 커버하므로 제외
-      const dates = allDates.filter(d => d !== startStr);
+      const dates    = getRepeatDates(repeat, startStr, repeatEnd, row.due);
       console.log('[반복업무] 생성 날짜:', dates);
       if (!dates.length) { showToast('생성할 날짜가 없어요 (평일 기준)'); return; }
 
-      // 원본 템플릿 저장 (반복 설정 유지)
-      row.id = 'temp_' + Date.now();
-      addToLocalDB(sheetName, row);
+      // 모든 날짜를 반복 카드로 생성 (원본 템플릿 별도 저장 안 함)
       closeModal();
       renderCurrentView();
-
-      // 반복 카드 일괄 생성
       const recurRow = { ...row, repeat: '' };
       createRecurringTasks(sheetName, recurRow, dates).then(() => renderCurrentView());
-
-      // 원본 Sheets 저장
-      callAppsScript({ action: 'add', sheetName, row });
       return;
     }
 
