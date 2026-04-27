@@ -734,19 +734,15 @@ function renderFlowGantt(ft, container) {
 
   const colW    = 36;
   const nameW   = 160;
-  const mediaW  = 32;
-  const stepW   = 68;
   const memberW = 46;
 
   let html = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
     <button class="modal-btn-save" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
   </div>
-  <div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+mediaW+stepW+memberW+colW*DAYS}px">
+  <div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+memberW+colW*DAYS}px">
     <thead>
       <tr>
         <th style="width:${nameW}px;text-align:left;padding:5px 8px;">업무</th>
-        <th style="width:${mediaW}px;text-align:center;">매체</th>
-        <th style="width:${stepW}px;text-align:center;">단계</th>
         <th style="width:${memberW}px;text-align:center;">담당</th>
         ${dates.map((d,i) => {
           const isToday   = sameDay(d, TODAY);
@@ -835,10 +831,6 @@ function renderFlowGantt(ft, container) {
           ` : ''}
         </div>
       </td>
-      <td style="padding:3px;text-align:center;">
-        ${mi ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:18px;padding:0 4px;border-radius:4px;font-size:8px;font-weight:700;background:${mi.bg};color:${mi.c};white-space:nowrap;" title="${t.media}">${mi.icon}</span>` : ''}
-      </td>
-      <td style="padding:4px;text-align:center;"><span style="${stepStyle}">${t.step}</span></td>
       <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 17)}</div></td>
       ${cells}
     </tr>`;
