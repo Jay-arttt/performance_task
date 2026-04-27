@@ -556,7 +556,8 @@ button { font-family: inherit; cursor: pointer; }
 }
 .task-card:hover .card-urgent-btn,
 .etc-card:hover .card-urgent-btn,
-.report-card:hover .card-urgent-btn{display:flex;}
+.report-card:hover .card-urgent-btn,
+.daily-card:hover .card-urgent-btn { display: flex; }
 .card-urgent-btn.on{
   display:flex;background:#FCEBEB;border-color:#F09595;color:#791F1F;
 }
@@ -688,9 +689,7 @@ button { font-family: inherit; cursor: pointer; }
 /* ── 점세개 메뉴 버튼 ── */
 .card-menu-btn{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:6px;background:transparent;border:none;font-size:12px;cursor:pointer;color:var(--color-text-tertiary);display:none;align-items:center;justify-content:center;transition:background .1s,color .1s;z-index:2;}
 .card-menu-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary);}
-.task-card:hover .card-menu-btn,
-.etc-card:hover .card-menu-btn,
-.report-card:hover .card-menu-btn{display:flex;}
+.daily-card:hover .card-menu-btn { display:flex; }
 .card-urgent-btn{position:absolute;top:6px;right:32px;}
 .ctx-btn{display:flex;align-items:center;gap:7px;width:100%;padding:7px 10px;font-size:12px;background:#fff;border:none;border-radius:7px;cursor:pointer;font-family:inherit;color:#1A1917;text-align:left;}
 .ctx-btn:hover{background:#F2F1EE;}
