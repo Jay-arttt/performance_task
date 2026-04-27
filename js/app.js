@@ -744,11 +744,11 @@ function renderFlowGantt(ft, container) {
       <tr>
         <th style="width:${nameW}px;text-align:left;padding:5px 8px;">업무</th>
         <th style="width:${memberW}px;text-align:center;">담당</th>
-        ${dates.map((d,i) => {
-          const isToday   = sameDay(d, TODAY);
+        ${dates.map((d,i) => {          const isToday   = sameDay(d, TODAY);
           const isWeekend = d.getDay()===0||d.getDay()===6;
           return `<th style="width:${colW}px;text-align:center;${isToday?'background:var(--color-background-info);color:var(--color-text-info);font-weight:600;':''}${isWeekend?'opacity:.45':''}">${dayLabels[i]}<br><span style="font-size:9px;">${dayNames[d.getDay()]}</span></th>`;
         }).join('')}
+        <th style="width:28px;"></th>
       </tr>
     </thead>
     <tbody>`;
@@ -833,6 +833,12 @@ function renderFlowGantt(ft, container) {
       </td>
       <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 17)}</div></td>
       ${cells}
+      <td style="padding:4px;text-align:center;" onclick="event.stopPropagation()">
+        <label class="done-check campaign-done-check" style="margin:0 auto;">
+          <input type="checkbox" ${t.status==='완료'?'checked':''} data-id="${t.id}">
+          <span class="check-box" style="width:15px;height:15px;font-size:9px;">${t.status==='완료'?'✓':''}</span>
+        </label>
+      </td>
     </tr>`;
   });
 
@@ -852,6 +858,20 @@ function renderFlowGantt(ft, container) {
       const t = DB.campaign.find(x => String(x.id) === String(row.dataset.id));
       if (t) openModal('edit', 'campaign', t);
     });
+    // 완료 체크박스
+    const checkbox = row.querySelector('.campaign-done-check input');
+    if (checkbox) {
+      checkbox.addEventListener('change', e => {
+        e.stopPropagation();
+        const t = DB.campaign.find(x => String(x.id) === String(e.target.dataset.id));
+        if (!t) return;
+        const newStatus = e.target.checked ? '완료' : '진행중';
+        t.status = newStatus;
+        callAppsScript({ action:'update', sheetName:'campaign', id:t.id, row:{ status: newStatus } }, { silent:true });
+        showToast(newStatus === '완료' ? `"${t.title}" 완료됐어요` : `"${t.title}" 진행중으로 변경됐어요`);
+        renderCurrentView();
+      });
+    }
     const menuBtn = row.querySelector('.gantt-menu-btn');
     if (menuBtn) {
       menuBtn.addEventListener('click', e => {
