@@ -482,7 +482,6 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldSelect('step', '단계', stepOptions, v('step', '소재기획'), true)}
       ${fieldSelect('status', '상태', ['진행중','컨펌대기','완료'].map(s => ({value:s,label:s})), v('status','진행중'), true)}
       ${fieldSelect('media', '매체', [''].concat(MEDIA_LIST).map(s => ({value:s,label:s||'없음'})), v('media'))}
-      ${fieldCheck('hasBid', '입찰가 관리 여부', v('hasBid', false))}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
       ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), false)}
       ${priorityField}

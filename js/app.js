@@ -47,7 +47,7 @@ TODAY.setHours(0,0,0,0);
 // ── 상태 ──────────────────────────────────
 let state = {
   view: 'flow',
-  flowView: 'board',   // board | list | gantt
+  flowView: 'gantt',
   brand: 'all',
   member: 'all',
   filterMedia: 'all',
@@ -136,6 +136,11 @@ function dueInfo(ds) {
 function fmtDate(d) {
   const days = ['일','월','화','수','목','금','토'];
   return `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+}
+function parseLocalDate(str) {
+  if (!str) return null;
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 function sameDay(a, b) {
   return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
@@ -302,10 +307,6 @@ function renderFlowControls() {
       </div>
       <div style="width:.5px;height:20px;background:var(--color-border-secondary);margin:0 4px;"></div>
       <div class="view-toggle">
-        <button class="vbtn ${state.flowView==='board'?'active':''}" data-flowview="board">
-          <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
-          보드
-        </button>
         <button class="vbtn ${state.flowView==='list'?'active':''}" data-flowview="list">
           <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="7" width="14" height="2" rx="1" fill="currentColor"/><rect x="1" y="12" width="14" height="2" rx="1" fill="currentColor"/></svg>
           리스트
@@ -387,9 +388,8 @@ function renderFlow() {
   listEl.style.display  = state.flowView === 'list'  ? '' : 'none';
   ganttEl.style.display = state.flowView === 'gantt' ? '' : 'none';
 
-  if (state.flowView === 'board') renderFlowBoard(ft, boardEl);
-  else if (state.flowView === 'list') renderFlowList(ft, listEl);
-  else renderFlowGantt(ft, ganttEl);
+  if (state.flowView === 'gantt') renderFlowGantt(ft, ganttEl);
+  else renderFlowList(ft, listEl);
 }
 
 // ── 보드 뷰 ───────────────────────────────
@@ -951,13 +951,15 @@ function renderDailyDay() {
       ...DB.report.map(t => ({ ...t, _src: 'report' })),
     ].filter(t => {
       if (!t.due) return false;
+      // startDate~due 기간 내 날짜이면 표시 (startDate 없으면 due 당일만)
+      const start = t.startDate ? parseLocalDate(t.startDate) : parseLocalDate(t.due);
+      const end   = parseLocalDate(t.due);
+      const inRange = state.viewDate >= start && state.viewDate <= end;
+      if (!inRange) return false;
       const assignees = parseAssignees(t.assignee);
-      if (!assignees.includes(m.name)) return false;
-      if (!sameDay(new Date(t.due), state.viewDate)) return false;
-      // 완료 숨김
+      if (assignees.length > 0 && !assignees.includes(m.name)) return false;
       const isDone = t._src === 'campaign' ? t.status === '완료' : (t.done === true || t.done === 'TRUE');
       if (!state.showCompleted && isDone) return false;
-      // 숨김 처리
       if (!state.showHidden && (t.hidden === true || t.hidden === 'TRUE')) return false;
       return true;
     });
@@ -1102,9 +1104,12 @@ function renderWeekly() {
   weekDates.forEach((date, i) => {
     const isToday = sameDay(date, TODAY);
     const dayTasks = allTasks.filter(t => {
-      if (!sameDay(new Date(t.due), date)) return false;
+      const start = t.startDate ? parseLocalDate(t.startDate) : parseLocalDate(t.due);
+      const end   = parseLocalDate(t.due);
+      if (!(date >= start && date <= end)) return false;
       if (state.member !== 'all') {
-        return parseAssignees(t.assignee).includes(state.member);
+        const assignees = parseAssignees(t.assignee);
+        if (assignees.length > 0 && !assignees.includes(state.member)) return false;
       }
       return true;
     });
@@ -1173,9 +1178,9 @@ function makeDailyCard(t) {
   el.dataset.due = t.due || '';
 
   el.innerHTML = `
-    <div class="card-brand-bar" style="background:${isUrgent ? '#E24B4A' : (t.brand ? brandColor(t.brand) : '#888780')}"></div>
+    <button class="card-urgent-btn ${isUrgent?'on':''}" data-id="${t.id}" data-src="${t._src}" title="${isUrgent?'긴급 해제':'긴급 설정'}">!</button>
+    <div class="card-brand-bar" style="background:${isUrgent?'#E24B4A':(t.brand?brandColor(t.brand):'#888780')}"></div>
     <div class="card-title daily-title-link" style="cursor:pointer;">
-      ${isUrgent ? '<span style="color:#E24B4A;font-size:10px;margin-right:3px;font-weight:700;">!</span>' : ''}
       ${t.title}
     </div>
     <div class="card-tags">
@@ -1187,13 +1192,28 @@ function makeDailyCard(t) {
     </div>
     ${driveLink(t.driveUrl, t.driveLabel)}
     <div class="card-footer">
-      <span class="due-badge ${due.cls}" style="${isDone?'display:none;':''}">${isLive ? '운영중' : due.label}</span>
+      <span class="due-badge ${due.cls}" style="${isDone?'display:none;':''}">${isLive?'운영중':due.label}</span>
       <span class="step-label">${stepLabel}</span>
-      <label class="done-check daily-done-check" style="margin-left:auto;" title="${isDone ? '완료 취소' : '완료 체크'}">
-        <input type="checkbox" ${isDone ? 'checked' : ''} data-id="${t.id}" data-src="${t._src}">
-        <span class="check-box">${isDone ? '✓' : ''}</span>
+      <label class="done-check daily-done-check" style="margin-left:auto;" title="${isDone?'완료 취소':'완료 체크'}">
+        <input type="checkbox" ${isDone?'checked':''} data-id="${t.id}" data-src="${t._src}">
+        <span class="check-box">${isDone?'✓':''}</span>
       </label>
     </div>`;
+
+  // 긴급 버튼 이벤트
+  el.querySelector('.card-urgent-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const src   = e.currentTarget.dataset.src;
+    const id    = e.currentTarget.dataset.id;
+    const dbKey = src === 'campaign' ? 'campaign' : src === 'common' ? 'common' : 'report';
+    const task  = DB[dbKey].find(x => String(x.id) === String(id));
+    if (!task) return;
+    const newUrgent = task.priority !== '긴급';
+    task.priority = newUrgent ? '긴급' : '일반';
+    callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ priority: task.priority } }, { silent:true });
+    showToast(newUrgent ? `"${task.title}" 긴급 설정됐어요` : `"${task.title}" 긴급 해제됐어요`);
+    renderDaily();
+  });
 
   // 완료 체크박스 이벤트
   el.querySelector('.daily-done-check input').addEventListener('change', e => {
