@@ -794,12 +794,7 @@ function renderFlowGantt(ft, container) {
       const isEnd   = sameDay(d, validEnd);
       const radius  = `${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'}`;
       const barStyle = `background:${bColor};height:20px;margin:2px 1px;border-radius:${radius};display:flex;align-items:center;justify-content:center;overflow:hidden;`;
-      const midDate = new Date(validStart.getTime() + (validEnd.getTime() - validStart.getTime()) / 2);
-      midDate.setHours(0,0,0,0);
-      const label = showLabel && sameDay(d, midDate)
-        ? `<span style="font-size:9px;font-weight:600;color:white;white-space:nowrap;padding:0 4px;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none;">${t.title}</span>`
-        : '';
-      return `<td style="${bgBase}padding:0;"><div style="${barStyle}">${label}</div></td>`;
+      return `<td style="${bgBase}padding:0;"><div style="${barStyle}"></div></td>`;
     }).join('');
 
     // 업무명 구분선 — 새 업무 시작 시 위쪽에 얇은 선
