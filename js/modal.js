@@ -605,7 +605,18 @@ function fieldAssignee(name, label, value = '', members = [], required = false) 
     <div class="assignee-picker" id="assigneePicker">${checkboxes}</div>
   </div>`;
 }
-// ── 날짜 퀵 버튼 이벤트 ──────────────────
+// ── 담당자 칩 클릭 이벤트 ────────────────
+document.addEventListener('click', e => {
+  const chip = e.target.closest('#assigneePicker .assignee-chip');
+  if (!chip) return;
+  chip.classList.toggle('checked');
+  const picker  = chip.closest('#assigneePicker');
+  const hidden  = picker?.previousElementSibling; // hidden input
+  if (hidden && hidden.type === 'hidden') {
+    hidden.value = [...picker.querySelectorAll('.assignee-chip.checked')]
+      .map(c => c.dataset.name).join(',');
+  }
+});
 document.addEventListener('click', e => {
   const btn = e.target.closest('.date-quick-btn');
   if (!btn) return;
