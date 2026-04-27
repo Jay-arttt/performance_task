@@ -583,6 +583,7 @@ function renderFlowList(ft, container) {
     const bColor = brandColor(bId);
 
     const tr = document.createElement('tr');
+    if (t.priority === '긴급') tr.style.background = '#FEF2F2';
     tr.innerHTML = `
       <td style="max-width:200px;">
         <div style="display:flex;align-items:center;gap:4px;">
@@ -838,8 +839,9 @@ function renderFlowGantt(ft, container) {
 
     // 업무명 구분선 — 새 업무 시작 시 위쪽에 얇은 선
     const rowBorder = showName && rowIdx > 0 ? 'border-top:1.5px solid var(--color-border-secondary);' : '';
+    const urgentBg  = t.priority === '긴급' ? 'background:#FEF2F2;' : '';
 
-    html += `<tr style="cursor:pointer;${rowBorder}${t.status==='완료'?'opacity:.55;':''}" class="gantt-row" data-id="${t.id}">
+    html += `<tr style="cursor:pointer;${rowBorder}${urgentBg}${t.status==='완료'?'opacity:.55;':''}" class="gantt-row" data-id="${t.id}">
       <td style="padding:4px 8px;max-width:${nameW}px;font-size:11px;color:var(--text-1);" title="${t.title}">
         <div style="display:flex;align-items:center;gap:3px;overflow:hidden;">
           ${showName ? `
