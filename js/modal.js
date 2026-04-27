@@ -38,27 +38,47 @@ function fieldRepeat(repeatValue = '', repeatEndValue = '') {
 }
 
 // ── 반복 주기 날짜 목록 생성 ──────────────
-function getRepeatDates(repeat, startStr, endStr, templateDue) {
+function getRepeatDates(repeat, startStr, endStr, templateStart, templateDue) {
   function parseLocal(s) { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
   function isWeekday(d) { return d.getDay()!==0 && d.getDay()!==6; }
   function toStr(d) { return d.toLocaleDateString('en-CA',{timeZone:'Asia/Seoul'}); }
-  const start = parseLocal(startStr), end = parseLocal(endStr);
-  const dates = [];
+
+  const rangeEnd = parseLocal(endStr);
+  const tStart   = templateStart ? parseLocal(templateStart) : parseLocal(startStr);
+  const tDue     = templateDue   ? parseLocal(templateDue)   : tStart;
+  const duration = Math.round((tDue - tStart) / 86400000); // 기간(일수)
+
+  const pairs = [];
+
   if (repeat === 'daily') {
-    const cur = new Date(start);
-    while (cur <= end) { if (isWeekday(cur)) dates.push(toStr(cur)); cur.setDate(cur.getDate()+1); }
+    const cur = new Date(tStart);
+    while (cur <= rangeEnd) {
+      if (isWeekday(cur)) {
+        const e = new Date(cur); e.setDate(e.getDate() + duration);
+        pairs.push({ startDate: toStr(cur), due: toStr(e) });
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
   } else if (repeat === 'weekly') {
-    const targetDay = templateDue ? parseLocal(templateDue).getDay() : start.getDay();
-    const cur = new Date(start);
-    while (cur.getDay() !== targetDay) cur.setDate(cur.getDate()+1);
-    while (cur <= end) { if (isWeekday(cur)) dates.push(toStr(cur)); cur.setDate(cur.getDate()+7); }
+    const cur = new Date(tStart);
+    while (cur <= rangeEnd) {
+      if (isWeekday(cur)) {
+        const e = new Date(cur); e.setDate(e.getDate() + duration);
+        pairs.push({ startDate: toStr(cur), due: toStr(e) });
+      }
+      cur.setDate(cur.getDate() + 7);
+    }
   } else if (repeat === 'monthly') {
-    const targetDate = templateDue ? parseLocal(templateDue).getDate() : start.getDate();
-    const cur = new Date(start.getFullYear(), start.getMonth(), targetDate);
-    if (cur < start) cur.setMonth(cur.getMonth()+1);
-    while (cur <= end) { if (isWeekday(cur)) dates.push(toStr(cur)); cur.setMonth(cur.getMonth()+1); }
+    const cur = new Date(tStart);
+    while (cur <= rangeEnd) {
+      if (isWeekday(cur)) {
+        const e = new Date(cur); e.setDate(e.getDate() + duration);
+        pairs.push({ startDate: toStr(cur), due: toStr(e) });
+      }
+      cur.setMonth(cur.getMonth() + 1);
+    }
   }
-  return dates;
+  return pairs;
 }
 // fire-and-forget: 화면은 즉시 갱신, Sheets 저장은 백그라운드에서
 function callAppsScript(payload, { silent = false } = {}) {
@@ -677,16 +697,15 @@ async function submitModal(mode, sheetName, task) {
     // 반복 업무: 기간 내 날짜 미리 생성
     if (repeat && (sheetName === 'common' || sheetName === 'report' || sheetName === 'campaign')) {
       if (!repeatEnd) { showToast('반복 종료일을 입력해주세요'); return; }
-      const startStr = row.due || todayStr();
-      const dates    = getRepeatDates(repeat, startStr, repeatEnd, row.due);
-      console.log('[반복업무] 생성 날짜:', dates);
-      if (!dates.length) { showToast('생성할 날짜가 없어요 (평일 기준)'); return; }
+      const startStr = row.startDate || row.due || todayStr();
+      const pairs    = getRepeatDates(repeat, startStr, repeatEnd, row.startDate, row.due);
+      console.log('[반복업무] 생성 날짜쌍:', pairs);
+      if (!pairs.length) { showToast('생성할 날짜가 없어요 (평일 기준)'); return; }
 
-      // 모든 날짜를 반복 카드로 생성 (원본 템플릿 별도 저장 안 함)
       closeModal();
       renderCurrentView();
       const recurRow = { ...row, repeat: '' };
-      createRecurringTasks(sheetName, recurRow, dates).then(() => renderCurrentView());
+      createRecurringTasks(sheetName, recurRow, pairs).then(() => renderCurrentView());
       return;
     }
 

@@ -66,13 +66,16 @@ function getRepeatDates(repeat, startStr, endStr, templateDue) {
 // 반복 업무 일괄 생성 (모달 저장 시 호출)
 async function createRecurringTasks(sheetName, baseRow, repeatDates) {
   const rows = [];
-  for (const dateStr of repeatDates) {
+  for (const pair of repeatDates) {
+    // pair는 { startDate, due } 객체
+    const startDate = pair.startDate || pair;
+    const due       = pair.due       || pair;
     const row = {
       ...baseRow,
-      due: dateStr,
-      startDate: dateStr,
+      startDate,
+      due,
       done: 'FALSE',
-      repeat: '', // 개별 카드는 반복 아님
+      repeat: '',
       id: 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2),
     };
     const dbKey = sheetName === 'campaign' ? 'campaign' : sheetName === 'common' ? 'common' : 'report';
