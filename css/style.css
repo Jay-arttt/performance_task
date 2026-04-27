@@ -416,8 +416,9 @@ button { font-family: inherit; cursor: pointer; }
 
 /* 간트 */
 .gantt-table{width:100%;border-collapse:collapse;font-size:13px;}
-.gantt-table th{padding:5px 4px;background:var(--surface2);color:var(--text-3);font-weight:500;border:.5px solid var(--border);white-space:nowrap;font-size:12px;}
-.gantt-table td{border:.5px solid var(--border);vertical-align:middle;}
+.gantt-table th{padding:5px 4px;background:var(--surface2);color:var(--text-3);font-weight:500;border:.5px solid var(--border);white-space:nowrap;font-size:12px;text-align:center;}
+.gantt-table th:first-child{text-align:left;padding-left:8px;}
+.gantt-table td{border:.5px solid var(--border);vertical-align:middle;text-align:center;}
 .gantt-table tbody tr:hover td{background:var(--surface2);}
 
 /* 아바타 오버랩 */
