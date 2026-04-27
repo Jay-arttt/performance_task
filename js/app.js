@@ -802,7 +802,7 @@ function renderFlowGantt(ft, container) {
     const urgentBg  = t.priority === '긴급' ? 'background:#FEF2F2;' : '';
 
     html += `<tr style="cursor:pointer;${rowBorder}${urgentBg}${t.status==='완료'?'opacity:.55;':''}" class="gantt-row" data-id="${t.id}">
-      <td style="padding:4px 8px;max-width:${nameW}px;font-size:11px;color:var(--text-1);" title="${t.title}">
+      <td style="padding:4px 8px;max-width:${nameW}px;font-size:13px;color:var(--text-1);" title="${t.title}">
         <div style="display:flex;align-items:center;gap:3px;overflow:hidden;">
           ${showName ? `
             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${bColor};flex-shrink:0;"></span>
