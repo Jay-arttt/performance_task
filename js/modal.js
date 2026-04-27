@@ -478,6 +478,7 @@ function buildModalHTML(mode, sheetName, task) {
       ${fieldSelect('status', '상태', ['진행중','컨펌대기','완료'].map(s => ({value:s,label:s})), v('status','진행중'), true)}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
       ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), false)}
+      ${fieldRepeat(v('repeat'), v('repeatEnd'))}
       ${priorityField}
       ${fieldTextarea('notes', '내용 · 메모', v('notes'))}
       ${fieldText('driveUrl', 'Drive 링크', v('driveUrl'))}
@@ -674,7 +675,7 @@ async function submitModal(mode, sheetName, task) {
       'sheetName:', sheetName);
 
     // 반복 업무: 기간 내 날짜 미리 생성
-    if (repeat && (sheetName === 'common' || sheetName === 'report')) {
+    if (repeat && (sheetName === 'common' || sheetName === 'report' || sheetName === 'campaign')) {
       if (!repeatEnd) { showToast('반복 종료일을 입력해주세요'); return; }
       const startStr = row.due || todayStr();
       const allDates = getRepeatDates(repeat, startStr, repeatEnd, row.due);

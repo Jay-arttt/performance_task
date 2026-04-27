@@ -75,7 +75,7 @@ async function createRecurringTasks(sheetName, baseRow, repeatDates) {
       repeat: '', // 개별 카드는 반복 아님
       id: 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2),
     };
-    const dbKey = sheetName === 'common' ? 'common' : 'report';
+    const dbKey = sheetName === 'campaign' ? 'campaign' : sheetName === 'common' ? 'common' : 'report';
     DB[dbKey].push({ ...row, done: false });
     rows.push(row);
   }
@@ -86,7 +86,7 @@ async function createRecurringTasks(sheetName, baseRow, repeatDates) {
     try {
       const result = await callAppsScript({ action: 'add', sheetName, row });
       if (result?.id) {
-        const dbKey = sheetName === 'common' ? 'common' : 'report';
+        const dbKey = sheetName === 'campaign' ? 'campaign' : sheetName === 'common' ? 'common' : 'report';
         const t = DB[dbKey].find(x => String(x.id) === String(row.id));
         if (t) t.id = result.id;
       }
