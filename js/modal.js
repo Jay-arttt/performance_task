@@ -472,16 +472,10 @@ function buildModalHTML(mode, sheetName, task) {
   let fields = '';
 
   if (sheetName === 'campaign') {
-    const stepOptions = [
-      ...FLOW_STEPS_BULK.concat(['Live']),
-      '키워드 추출', '미디어믹스', 'SA 운영', '랜딩 제작', '기타'
-    ].map(s => ({value:s, label:s}));
     fields = `
       ${fieldText('title', '업무명', v('title'), true)}
       ${fieldSelect('brand', '브랜드', brands.map(b => ({value:b.id,label:b.label})), v('brand'), true)}
-      ${fieldSelect('step', '단계', stepOptions, v('step', '소재기획'), true)}
       ${fieldSelect('status', '상태', ['진행중','컨펌대기','완료'].map(s => ({value:s,label:s})), v('status','진행중'), true)}
-      ${fieldSelect('media', '매체', [''].concat(MEDIA_LIST).map(s => ({value:s,label:s||'없음'})), v('media'))}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
       ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), false)}
       ${priorityField}
@@ -493,7 +487,6 @@ function buildModalHTML(mode, sheetName, task) {
     fields = `
       ${fieldSelect('type', '유형', ['미디어믹스','정산','광고비 확인','광고비 충전','입찰가 관리','기타'].map(s => ({value:s,label:s})), v('type','정산'), true)}
       ${fieldText('title', '업무명', v('title'), true)}
-      ${fieldSelect('media', '매체', [''].concat(MEDIA_LIST).map(s => ({value:s,label:s||'없음'})), v('media'))}
       ${fieldAssignee('assignee', '담당자', v('assignee'), members, true)}
       ${fieldDateRange('startDate', 'due', '기간', v('startDate'), v('due'), true)}
       ${fieldRepeat(v('repeat'), v('repeatEnd'))}
