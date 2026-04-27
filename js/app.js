@@ -734,11 +734,11 @@ function renderFlowGantt(ft, container) {
     <thead>
       <tr>
         <th style="width:${nameW}px;text-align:left;padding:5px 8px;">업무</th>
-        <th style="width:28px;text-align:center;font-size:10px;">완료</th>
+        <th style="width:28px;text-align:center;font-size:12px;">완료</th>
         <th style="width:${memberW}px;text-align:center;">담당</th>
         ${dates.map((d,i) => {          const isToday   = sameDay(d, TODAY);
           const isWeekend = d.getDay()===0||d.getDay()===6;
-          return `<th style="width:${colW}px;text-align:center;${isToday?'background:var(--color-background-info);color:var(--color-text-info);font-weight:600;':''}${isWeekend?'opacity:.45':''}">${dayLabels[i]}<br><span style="font-size:9px;">${dayNames[d.getDay()]}</span></th>`;
+          return `<th style="width:${colW}px;text-align:center;${isToday?'background:var(--color-background-info);color:var(--color-text-info);font-weight:600;':''}${isWeekend?'opacity:.45':''}">${dayLabels[i]}<br><span style="font-size:11px;">${dayNames[d.getDay()]}</span></th>`;
         }).join('')}
       </tr>
     </thead>
@@ -818,7 +818,7 @@ function renderFlowGantt(ft, container) {
           <span class="check-box" style="width:15px;height:15px;font-size:9px;">${t.status==='완료'?'✓':''}</span>
         </label>
       </td>
-      <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 17)}</div></td>
+      <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 22)}</div></td>
       ${cells}
       </tr>`;
   });
