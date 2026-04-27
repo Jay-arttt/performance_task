@@ -267,7 +267,6 @@ function renderBrandTabs(src) {
 
 function renderFlowControls() {
   const members = getActiveMembers();
-  const mediaList = ['all','Meta','GFA','네이버','구글','카카오'];
 
   document.getElementById('flowControlsWrap').innerHTML = `
     <div class="controls-bar">
@@ -276,12 +275,6 @@ function renderFlowControls() {
         <select class="ctrl-select" id="selMember">
           <option value="all">전체</option>
           ${members.map(m => `<option value="${m.name}" ${state.member===m.name?'selected':''}>${m.name}</option>`).join('')}
-        </select>
-      </div>
-      <div class="ctrl-group">
-        <label class="ctrl-label">매체</label>
-        <select class="ctrl-select" id="selMedia">
-          ${mediaList.map(v => `<option value="${v}" ${state.filterMedia===v?'selected':''}>${v==='all'?'전체':v}</option>`).join('')}
         </select>
       </div>
       <div class="ctrl-group">
@@ -319,7 +312,6 @@ function renderFlowControls() {
     </div>`;
 
   document.getElementById('selMember').addEventListener('change', e => { state.member = e.target.value; renderFlow(); });
-  document.getElementById('selMedia').addEventListener('change', e => { state.filterMedia = e.target.value; renderFlow(); });
   document.getElementById('selDue').addEventListener('change', e => { state.filterDue = e.target.value; renderFlow(); });
   document.getElementById('selPriority').addEventListener('change', e => { state.filterPriority = e.target.value; renderFlow(); });
   document.getElementById('completedToggle')?.addEventListener('click', () => {
@@ -552,9 +544,6 @@ function renderFlowList(ft, container) {
       <thead><tr>
         <th ${thStyle('title')}>업무명</th>
         <th ${thStyle('brand')}>브랜드 <span class="col-filter-icon" data-col="brand">▾</span></th>
-        <th ${thStyle('step')}>단계 <span class="col-filter-icon" data-col="step">▾</span></th>
-        <th>상태</th>
-        <th>매체 <span class="col-filter-icon" data-col="media">▾</span></th>
         <th ${thStyle('assignee')}>담당자 <span class="col-filter-icon" data-col="assignee">▾</span></th>
         <th ${thStyle('due')}>기한</th>
         <th>자료</th>
@@ -592,11 +581,8 @@ function renderFlowList(ft, container) {
         </div>
       </td>
       <td class="list-edit-cell" data-field="brand" data-id="${t.id}"><span class="tag" style="${brandTagStyle(bId)}">${bLabel}</span></td>
-      <td class="list-edit-cell" data-field="step"  data-id="${t.id}"><span class="tag" style="background:${sp.bg};color:${sp.c}">${t.step}</span></td>
-      <td class="list-edit-cell" data-field="status" data-id="${t.id}"><span class="tag" style="background:${ss.bg};color:${ss.c}">${isLive?'운영중':t.status}</span></td>
-      <td class="list-edit-cell" data-field="media" data-id="${t.id}">${ms ? `<span class="tag" style="background:${ms.bg};color:${ms.c}">${t.media}</span>` : '<span style="color:var(--color-text-tertiary);font-size:11px;">—</span>'}</td>
       <td class="list-edit-cell" data-field="assignee" data-id="${t.id}"><div style="display:flex;">${renderAvatars(t.assignee, 20)}</div></td>
-      <td class="list-edit-cell" data-field="due" data-id="${t.id}"><span class="due-badge ${due.cls}">${isLive?'운영중':due.label}</span></td>
+      <td class="list-edit-cell" data-field="due" data-id="${t.id}"><span class="due-badge ${due.cls}">${due.label}</span></td>
       <td>${driveLink(t.driveUrl, t.driveLabel)}</td>`;
 
     // 업무명 클릭 → 수정 모달
