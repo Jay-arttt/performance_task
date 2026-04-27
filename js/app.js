@@ -812,8 +812,8 @@ function renderFlowGantt(ft, container) {
           ` : ''}
         </div>
       </td>
-      <td style="padding:4px;text-align:center;" onclick="event.stopPropagation()">
-        <label class="done-check campaign-done-check" style="margin:0 auto;">
+      <td style="padding:4px;text-align:center;vertical-align:middle;" onclick="event.stopPropagation()">
+        <label class="done-check campaign-done-check" style="display:flex;align-items:center;justify-content:center;margin:0 auto;">
           <input type="checkbox" ${t.status==='완료'?'checked':''} data-id="${t.id}">
           <span class="check-box" style="width:15px;height:15px;font-size:9px;">${t.status==='완료'?'✓':''}</span>
         </label>
