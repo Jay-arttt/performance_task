@@ -545,8 +545,7 @@ function renderFlowList(ft, container) {
 
   container.innerHTML = `
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
-      <button class="modal-btn-cancel" id="btnAddCampaignList" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
-      <button class="modal-btn-save" id="btnBulkCampaignList" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
+      <button class="modal-btn-save" id="btnAddCampaignList" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
     </div>
     <div style="overflow-x:auto;">
     <table class="list-table">
@@ -565,7 +564,6 @@ function renderFlowList(ft, container) {
   </div>`;
 
   container.querySelector('#btnAddCampaignList')?.addEventListener('click', () => openModal('add', 'campaign'));
-  container.querySelector('#btnBulkCampaignList')?.addEventListener('click', () => openModal('bulk'));
 
   const tbody = container.querySelector('#listTbody');
   sorted.forEach(t => {
@@ -755,8 +753,7 @@ function renderFlowGantt(ft, container) {
   const memberW = 46;
 
   let html = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
-    <button class="modal-btn-cancel" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
-    <button class="modal-btn-save" id="btnBulkCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
+    <button class="modal-btn-save" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
   </div>
   <div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+mediaW+stepW+memberW+colW*DAYS}px">
     <thead>
@@ -865,14 +862,12 @@ function renderFlowGantt(ft, container) {
 
   if (!sorted.length && !noDate.length) {
     html = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
-      <button class="modal-btn-cancel" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
-      <button class="modal-btn-save" id="btnBulkCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 브랜드 일정 등록</button>
+      <button class="modal-btn-save" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
     </div>
     <div style="padding:2rem;text-align:center;color:var(--color-text-tertiary);font-size:13px;">표시할 업무가 없어요</div>`;
   }
   container.innerHTML = html;
   container.querySelector('#btnAddCampaignGantt')?.addEventListener('click', () => openModal('add', 'campaign'));
-  container.querySelector('#btnBulkCampaignGantt')?.addEventListener('click', () => openModal('bulk'));
 
   container.querySelectorAll('.gantt-row').forEach(row => {
     row.addEventListener('click', () => {
