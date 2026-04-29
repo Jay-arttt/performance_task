@@ -700,3 +700,28 @@ button { font-family: inherit; cursor: pointer; }
   .ctx-btn{background:#242228;color:#F0EEE8;}
   .ctx-btn:hover{background:#2E2C33;}
 }
+
+/* ── 화이트보드 ── */
+.whiteboard-wrap{margin:0 0 12px;border:1.5px solid #E8D9A0;border-radius:12px;overflow:hidden;background:#FFFDF5;}
+.wb-tray{background:#FFF8E7;border-bottom:0.5px solid #F0E4B0;padding:7px 14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.wb-sep{width:0.5px;height:18px;background:#E8D9A0;flex-shrink:0;}
+.wb-font-select{font-size:12px;padding:3px 8px;border:0.5px solid #D4C07A;border-radius:6px;background:#FFFDF5;color:#633806;cursor:pointer;}
+.wb-font-select:focus{outline:none;border-color:#BA7517;}
+.wb-sizes{display:flex;gap:3px;}
+.wb-sbtn{font-size:11px;padding:3px 7px;border:0.5px solid transparent;border-radius:5px;cursor:pointer;background:transparent;color:#854F0B;font-family:inherit;}
+.wb-sbtn:hover,.wb-sbtn.on{background:#FAC775;border-color:#BA7517;}
+.wb-colors{display:flex;gap:5px;align-items:center;}
+.wb-cdot{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0;transition:transform .12s;}
+.wb-cdot:hover{transform:scale(1.2);}
+.wb-cdot.on{border-color:#633806;box-shadow:0 0 0 2px #FFFDF5 inset;}
+.wb-styles{display:flex;gap:3px;}
+.wb-stbtn{font-size:12px;padding:3px 7px;border:0.5px solid transparent;border-radius:5px;cursor:pointer;background:transparent;color:#854F0B;font-family:inherit;}
+.wb-stbtn:hover,.wb-stbtn.on{background:#FAC775;border-color:#BA7517;}
+.wb-status{font-size:11px;color:#BA7517;}
+.wb-save-btn{font-size:12px;padding:4px 12px;border:none;border-radius:6px;cursor:pointer;background:#BA7517;color:#fff;font-weight:500;font-family:inherit;}
+.wb-save-btn:hover{background:#854F0B;}
+.wb-toggle-btn{font-size:11px;padding:3px 7px;border:0.5px solid #D4C07A;border-radius:5px;cursor:pointer;background:transparent;color:#BA7517;}
+.wb-toggle-btn:hover{background:#FAC775;}
+.wb-body{transition:max-height .25s ease,opacity .25s ease;max-height:300px;opacity:1;overflow:hidden;}
+.wb-body.collapsed{max-height:0;opacity:0;}
+.wb-editor{width:100%;min-height:100px;padding:14px 18px;font-size:15px;color:#2C2C2A;line-height:1.8;background:transparent;border:none;outline:none;resize:vertical;font-family:'Noto Sans KR',sans-serif;}
