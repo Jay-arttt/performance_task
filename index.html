@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="팀 대시보드">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&family=Nanum+Myeongjo&family=Nanum+Pen+Script&family=Gowun+Batang&family=Black+Han+Sans&family=Playfair+Display&family=Dancing+Script&family=Caveat&family=Pacifico&display=swap" rel="stylesheet">
   <title>퍼포먼스 업무 관리</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -25,6 +26,58 @@
       <span class="sync-badge sample" id="syncBadge">로딩 중</span>
     </div>
   </header>
+
+  <!-- 화이트보드 메모 -->
+  <div class="whiteboard-wrap" id="whiteboardWrap">
+    <div class="wb-tray">
+      <select class="wb-font-select" id="wbFont">
+        <optgroup label="한글">
+          <option value="'Noto Sans KR',sans-serif">Noto Sans KR</option>
+          <option value="'Nanum Myeongjo',serif">나눔명조</option>
+          <option value="'Nanum Pen Script',cursive">나눔펜</option>
+          <option value="'Gowun Batang',serif">고운바탕</option>
+          <option value="'Black Han Sans',sans-serif">블랙한산스</option>
+        </optgroup>
+        <optgroup label="영문">
+          <option value="'Playfair Display',serif">Playfair Display</option>
+          <option value="'Dancing Script',cursive">Dancing Script</option>
+          <option value="'Caveat',cursive">Caveat</option>
+          <option value="'Pacifico',cursive">Pacifico</option>
+        </optgroup>
+      </select>
+      <div class="wb-sep"></div>
+      <div class="wb-sizes">
+        <button class="wb-sbtn" data-size="12">S</button>
+        <button class="wb-sbtn on" data-size="15">M</button>
+        <button class="wb-sbtn" data-size="19">L</button>
+        <button class="wb-sbtn" data-size="24">XL</button>
+      </div>
+      <div class="wb-sep"></div>
+      <div class="wb-colors">
+        <div class="wb-cdot on" data-color="#2C2C2A" style="background:#2C2C2A;"></div>
+        <div class="wb-cdot" data-color="#185FA5" style="background:#185FA5;"></div>
+        <div class="wb-cdot" data-color="#A32D2D" style="background:#A32D2D;"></div>
+        <div class="wb-cdot" data-color="#0F6E56" style="background:#0F6E56;"></div>
+        <div class="wb-cdot" data-color="#7F77DD" style="background:#7F77DD;"></div>
+        <div class="wb-cdot" data-color="#BA7517" style="background:#BA7517;"></div>
+        <div class="wb-cdot" data-color="#888780" style="background:#888780;"></div>
+      </div>
+      <div class="wb-sep"></div>
+      <div class="wb-styles">
+        <button class="wb-stbtn" data-style="bold" style="font-weight:700;">B</button>
+        <button class="wb-stbtn" data-style="italic" style="font-style:italic;">I</button>
+        <button class="wb-stbtn" data-style="underline" style="text-decoration:underline;">U</button>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <span class="wb-status" id="wbStatus"></span>
+        <button class="wb-save-btn" id="wbSaveBtn">저장</button>
+        <button class="wb-toggle-btn" id="wbToggleBtn" title="접기/펼치기">▲</button>
+      </div>
+    </div>
+    <div class="wb-body" id="wbBody">
+      <textarea class="wb-editor" id="wbEditor" placeholder="팀 공유 메모를 입력하세요... 저장하면 모든 팀원에게 보여요"></textarea>
+    </div>
+  </div>
 
   <nav class="view-tabs">
     <button class="view-tab active" data-view="daily">
