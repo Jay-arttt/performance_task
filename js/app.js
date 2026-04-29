@@ -1515,6 +1515,7 @@ async function main() {
   await initData();
   generateRecurringTasks();
   bindEvents();
+  initWhiteboard(); // 화이트보드 초기화
 
   // 마지막으로 보던 탭 복원 (없으면 데일리 업무)
   const VALID_VIEWS = ['daily','flow','report','etc','resources'];
@@ -1537,3 +1538,123 @@ async function main() {
 }
 
 document.addEventListener('DOMContentLoaded', main);
+
+// ── 화이트보드 ────────────────────────────
+function initWhiteboard() {
+  const editor   = document.getElementById('wbEditor');
+  const fontSel  = document.getElementById('wbFont');
+  const saveBtn  = document.getElementById('wbSaveBtn');
+  const toggleBtn= document.getElementById('wbToggleBtn');
+  const wbBody   = document.getElementById('wbBody');
+  const wbStatus = document.getElementById('wbStatus');
+
+  let color = '#2C2C2A';
+  let collapsed = false;
+  const activeStyles = new Set();
+
+  function applyStyle() {
+    editor.style.fontFamily     = fontSel.value;
+    editor.style.color          = color;
+    editor.style.fontWeight     = activeStyles.has('bold')      ? '700' : '400';
+    editor.style.fontStyle      = activeStyles.has('italic')    ? 'italic' : 'normal';
+    editor.style.textDecoration = activeStyles.has('underline') ? 'underline' : 'none';
+  }
+
+  // 폰트
+  fontSel.addEventListener('change', () => { applyStyle(); editor.focus(); });
+
+  // 사이즈
+  document.querySelectorAll('.wb-sbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.wb-sbtn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      editor.style.fontSize = btn.dataset.size + 'px';
+      editor.focus();
+    });
+  });
+
+  // 색상
+  document.querySelectorAll('.wb-cdot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      document.querySelectorAll('.wb-cdot').forEach(d => d.classList.remove('on'));
+      dot.classList.add('on');
+      color = dot.dataset.color;
+      applyStyle();
+      editor.focus();
+    });
+  });
+
+  // 스타일
+  document.querySelectorAll('.wb-stbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = btn.dataset.style;
+      activeStyles.has(s) ? activeStyles.delete(s) : activeStyles.add(s);
+      btn.classList.toggle('on');
+      applyStyle();
+      editor.focus();
+    });
+  });
+
+  // 접기/펼치기
+  toggleBtn.addEventListener('click', () => {
+    collapsed = !collapsed;
+    wbBody.classList.toggle('collapsed', collapsed);
+    toggleBtn.textContent = collapsed ? '▼' : '▲';
+  });
+
+  // 변경 감지
+  editor.addEventListener('input', () => {
+    wbStatus.textContent = '저장 안 됨';
+    wbStatus.style.color = '#BA7517';
+  });
+
+  // 저장
+  saveBtn.addEventListener('click', async () => {
+    wbStatus.textContent = '저장 중...';
+    try {
+      await callAppsScript({
+        action:     'saveNotice',
+        content:    editor.value,
+        fontFamily: fontSel.value,
+        fontSize:   editor.style.fontSize || '15px',
+        color:      color,
+        updatedAt:  new Date().toISOString(),
+      });
+      wbStatus.textContent = '저장됨 ✓';
+      wbStatus.style.color = '#0F6E56';
+    } catch(e) {
+      wbStatus.textContent = '저장 실패';
+      wbStatus.style.color = '#A32D2D';
+    }
+  });
+
+  // 로드
+  loadNotice(editor, fontSel, wbStatus);
+  applyStyle();
+}
+
+async function loadNotice(editor, fontSel, wbStatus) {
+  if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') return;
+  try {
+    const res  = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=loadNotice');
+    const data = await res.json();
+    if (data.success && data.notice && data.notice.content) {
+      const n = data.notice;
+      editor.value          = n.content;
+      editor.style.fontFamily = n.fontFamily || "'Noto Sans KR',sans-serif";
+      editor.style.fontSize   = n.fontSize   || '15px';
+      editor.style.color      = n.color      || '#2C2C2A';
+      // 폰트 셀렉트 동기화
+      [...fontSel.options].forEach(o => {
+        if (o.value === n.fontFamily) o.selected = true;
+      });
+      if (n.updatedAt) {
+        const d = new Date(n.updatedAt);
+        wbStatus.textContent = `마지막 저장 ${d.toLocaleDateString('ko-KR')} ${d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
+        wbStatus.style.color = '#888780';
+      }
+    }
+  } catch(e) {
+    console.warn('[화이트보드] 로드 실패:', e.message);
+  }
+}
