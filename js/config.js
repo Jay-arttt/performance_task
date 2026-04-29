@@ -5,10 +5,10 @@
 
 const CONFIG = {
   // Google Sheets API Key (읽기 전용, 공개 시트용)
-  API_KEY: 'YOUR_GOOGLE_API_KEY',
+  API_KEY: 'AIzaSyCW8VT0yfP3ZZbk66kj9hDE6jUAdE31HvU',
 
   // Spreadsheet ID
-  SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID',
+  SPREADSHEET_ID: '1DL-qfAUbym0biC2Xm6zaXrN1A1B9XzW1SFUhxuIDcLo',
 
   // Apps Script 배포 URL (쓰기용)
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycby-o20oLOUFU5dWn7V7TOok-oqxkAwc3zDXJVXIpMayPQeXFa-FUSvK_g3vmZM8LTwRaQ/exec',
