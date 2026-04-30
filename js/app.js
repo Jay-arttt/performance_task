@@ -516,6 +516,10 @@ function removePH() { if (state.placeholder?.parentNode) state.placeholder.paren
 // ── 리스트 뷰 ─────────────────────────────
 function renderFlowList(ft, container) {
   const sorted = [...ft].sort((a, b) => {
+    // 긴급 업무 항상 상단
+    const ua = a.priority === '긴급' ? 0 : 1;
+    const ub = b.priority === '긴급' ? 0 : 1;
+    if (ua !== ub) return ua - ub;
     let va = a[state.sortKey] || '', vb = b[state.sortKey] || '';
     if (state.sortKey === 'due') { va = new Date(va).getTime(); vb = new Date(vb).getTime(); }
     return (va < vb ? -1 : va > vb ? 1 : 0) * (state.sortAsc ? 1 : -1);
@@ -745,11 +749,14 @@ function renderFlowGantt(ft, container) {
     <tbody>`;
 
   const sorted  = [...ft].filter(t => t.startDate || t.due).sort((a,b) => {
-    const da = new Date(a.startDate || a.due);
-    const db = new Date(b.startDate || b.due);
-    return da - db;
+    const ua = a.priority === '긴급' ? 0 : 1;
+    const ub = b.priority === '긴급' ? 0 : 1;
+    if (ua !== ub) return ua - ub;
+    return new Date(a.startDate || a.due) - new Date(b.startDate || b.due);
   });
-  const noDate  = ft.filter(t => !t.startDate && !t.due);
+  const noDate  = ft.filter(t => !t.startDate && !t.due).sort((a,b) =>
+    (a.priority === '긴급' ? 0 : 1) - (b.priority === '긴급' ? 0 : 1)
+  );
   const allRows = [...sorted, ...noDate];
 
   // 업무명에서 · 매체 부분 분리
@@ -764,7 +771,7 @@ function renderFlowGantt(ft, container) {
   allRows.forEach((t, rowIdx) => {
     const isLive    = t.step === 'Live';
     const bId    = String(t.brand || '');
-    const bColor = brandColor(bId);
+    const bColor = t.priority === '긴급' ? '#E24B4A' : brandColor(bId);
     const { base: baseName } = splitTitle(t.title);
 
     // 이전 행과 기본 업무명 같으면 이름 숨김
@@ -952,7 +959,11 @@ function renderDailyDay() {
     if (!allTasks.length) {
       col.innerHTML += `<div class="daily-empty">업무 없음</div>`;
     } else {
-      allTasks.forEach(t => col.appendChild(makeDailyCard(t)));
+      // 긴급 업무 상단 정렬
+      const sortedTasks = [...allTasks].sort((a, b) =>
+        (a.priority === '긴급' ? 0 : 1) - (b.priority === '긴급' ? 0 : 1)
+      );
+      sortedTasks.forEach(t => col.appendChild(makeDailyCard(t)));
     }
 
     // 드롭 — 담당자 변경
