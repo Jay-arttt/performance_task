@@ -60,7 +60,10 @@ let state = {
   viewDate: new Date(),
   sortKey: 'due',
   sortAsc: true,
-  dragId: null,
+  ganttOffset: 0,
+  ganttDays: 14,
+  ganttCustomStart: '',  // 커스텀 시작일
+  ganttCustomEnd: '',    // 커스텀 종료일
   placeholder: null,
 };
 state.viewDate.setHours(0,0,0,0);
@@ -699,12 +702,27 @@ function openListInlineEditor(cell, task, field, onSave) {
   }, 0);
 }
 function renderFlowGantt(ft, container) {
-  const DAYS = 14;
-  const dates = Array.from({ length: DAYS }, (_, i) => {
-    const d = new Date(TODAY); d.setDate(d.getDate() + i); return d;
-  });
+  // 커스텀 범위 or 오프셋 기반
+  let dates;
+  if (state.ganttCustomStart && state.ganttCustomEnd) {
+    const s = new Date(state.ganttCustomStart); s.setHours(0,0,0,0);
+    const e = new Date(state.ganttCustomEnd);   e.setHours(0,0,0,0);
+    dates = [];
+    const cur = new Date(s);
+    while (cur <= e) { dates.push(new Date(cur)); cur.setDate(cur.getDate()+1); }
+  } else {
+    const DAYS = state.ganttDays;
+    const baseDate = new Date(TODAY);
+    baseDate.setDate(baseDate.getDate() + state.ganttOffset * DAYS);
+    dates = Array.from({ length: DAYS }, (_, i) => {
+      const d = new Date(baseDate); d.setDate(d.getDate() + i); return d;
+    });
+  }
+  const DAYS = dates.length;
   const dayLabels = dates.map(d => `${d.getMonth()+1}/${d.getDate()}`);
   const dayNames  = ['일','월','화','수','목','금','토'];
+  const startLabel = `${dates[0].getMonth()+1}/${dates[0].getDate()}`;
+  const endLabel   = `${dates[DAYS-1].getMonth()+1}/${dates[DAYS-1].getDate()}`;
 
   const STEP_COLORS = {
     '소재기획': '#AFA9EC',
@@ -727,12 +745,31 @@ function renderFlowGantt(ft, container) {
     '카카오':     {icon:'카카오', bg:'#FAEEDA', c:'#633806'},
   };
 
-  const colW    = 36;
+  const colW    = DAYS === 30 ? 28 : 36;
   const nameW   = 160;
   const memberW = 46;
 
-  let html = `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
-    <button class="modal-btn-save" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+  const isCustom = !!(state.ganttCustomStart && state.ganttCustomEnd);
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      ${!isCustom ? `<button class="gantt-nav-btn" id="ganttPrev">←</button>` : ''}
+      <span style="font-size:13px;font-weight:500;">${startLabel} ~ ${endLabel}</span>
+      ${!isCustom ? `<button class="gantt-nav-btn" id="ganttNext">→</button>` : ''}
+      ${(!isCustom && state.ganttOffset!==0) ? `<button class="gantt-nav-btn" id="ganttToday" style="font-size:11px;padding:4px 10px;">오늘</button>` : ''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:4px;background:var(--color-background-secondary);border:1px solid var(--color-border-secondary);border-radius:8px;padding:3px 8px;">
+        <input type="date" id="ganttStartPick" value="${state.ganttCustomStart||''}" style="font-size:11px;border:none;background:transparent;outline:none;cursor:pointer;color:var(--color-text-primary);">
+        <span style="font-size:11px;color:var(--color-text-tertiary);">~</span>
+        <input type="date" id="ganttEndPick" value="${state.ganttCustomEnd||''}" style="font-size:11px;border:none;background:transparent;outline:none;cursor:pointer;color:var(--color-text-primary);">
+        ${isCustom ? `<button id="ganttClearCustom" style="font-size:10px;padding:1px 5px;border:none;background:transparent;color:var(--color-text-tertiary);cursor:pointer;">✕</button>` : ''}
+      </div>
+      <div class="view-toggle" style="padding:2px;">
+        <button class="vbtn ${(!isCustom && state.ganttDays===14)?'active':''}" id="gantt2w">2주</button>
+        <button class="vbtn ${(!isCustom && state.ganttDays===30)?'active':''}" id="gantt1m">1달</button>
+      </div>
+      <button class="modal-btn-save" id="btnAddCampaignGantt" style="font-size:12px;padding:6px 14px;">+ 업무 추가</button>
+    </div>
   </div>
   <div style="overflow-x:auto;"><table class="gantt-table" style="min-width:${nameW+memberW+colW*DAYS}px">
     <thead>
@@ -742,7 +779,7 @@ function renderFlowGantt(ft, container) {
         <th style="width:${memberW}px;text-align:center;">담당</th>
         ${dates.map((d,i) => {          const isToday   = sameDay(d, TODAY);
           const isWeekend = d.getDay()===0||d.getDay()===6;
-          return `<th style="width:${colW}px;text-align:center;${isToday?'background:var(--color-background-info);color:var(--color-text-info);font-weight:600;':''}${isWeekend?'opacity:.45':''}">${dayLabels[i]}<br><span style="font-size:11px;">${dayNames[d.getDay()]}</span></th>`;
+          return `<th style="width:${colW}px;text-align:center;${isToday?'background:var(--color-background-info);color:var(--color-text-info);font-weight:600;':''}${isWeekend?'opacity:.45':''}">${dayLabels[i]}${DAYS===14?`<br><span style="font-size:11px;">${dayNames[d.getDay()]}</span>`:''}</th>`;
         }).join('')}
       </tr>
     </thead>
@@ -840,6 +877,25 @@ function renderFlowGantt(ft, container) {
   }
   container.innerHTML = html;
   container.querySelector('#btnAddCampaignGantt')?.addEventListener('click', () => openModal('add', 'campaign'));
+  container.querySelector('#ganttPrev')?.addEventListener('click', () => { state.ganttOffset--; renderFlow(); });
+  container.querySelector('#ganttNext')?.addEventListener('click', () => { state.ganttOffset++; renderFlow(); });
+  container.querySelector('#ganttToday')?.addEventListener('click', () => { state.ganttOffset = 0; renderFlow(); });
+  container.querySelector('#gantt2w')?.addEventListener('click', () => { state.ganttDays = 14; state.ganttOffset = 0; state.ganttCustomStart = ''; state.ganttCustomEnd = ''; renderFlow(); });
+  container.querySelector('#gantt1m')?.addEventListener('click', () => { state.ganttDays = 30; state.ganttOffset = 0; state.ganttCustomStart = ''; state.ganttCustomEnd = ''; renderFlow(); });
+  container.querySelector('#ganttClearCustom')?.addEventListener('click', () => { state.ganttCustomStart = ''; state.ganttCustomEnd = ''; renderFlow(); });
+
+  // 날짜 직접 선택
+  function applyCustomRange() {
+    const s = container.querySelector('#ganttStartPick')?.value;
+    const e = container.querySelector('#ganttEndPick')?.value;
+    if (s && e && s <= e) {
+      state.ganttCustomStart = s;
+      state.ganttCustomEnd   = e;
+      renderFlow();
+    }
+  }
+  container.querySelector('#ganttStartPick')?.addEventListener('change', applyCustomRange);
+  container.querySelector('#ganttEndPick')?.addEventListener('change', applyCustomRange);
 
   container.querySelectorAll('.gantt-row').forEach(row => {
     row.addEventListener('click', () => {
