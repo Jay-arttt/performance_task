@@ -725,3 +725,7 @@ button { font-family: inherit; cursor: pointer; }
 .wb-body{transition:max-height .25s ease,opacity .25s ease;max-height:300px;opacity:1;overflow:hidden;}
 .wb-body.collapsed{max-height:0;opacity:0;}
 .wb-editor{width:100%;min-height:100px;padding:14px 18px;font-size:15px;color:#2C2C2A;line-height:1.8;background:transparent;border:none;outline:none;resize:vertical;font-family:'Noto Sans KR',sans-serif;}
+
+/* ── 간트 네비게이션 버튼 ── */
+.gantt-nav-btn{font-size:14px;padding:4px 12px;border:1.5px solid var(--color-border-secondary);border-radius:8px;background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;font-family:inherit;transition:all .12s;}
+.gantt-nav-btn:hover{border-color:var(--color-border-primary);color:var(--color-text-primary);}
