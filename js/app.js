@@ -62,8 +62,9 @@ let state = {
   sortAsc: true,
   ganttOffset: 0,
   ganttDays: 14,
-  ganttCustomStart: '',  // 커스텀 시작일
-  ganttCustomEnd: '',    // 커스텀 종료일
+  ganttCustomStart: '',
+  ganttCustomEnd: '',
+  ganttHideMember: false, // 담당자 컬럼 숨김
   placeholder: null,
 };
 state.viewDate.setHours(0,0,0,0);
@@ -758,6 +759,7 @@ function renderFlowGantt(ft, container) {
       ${(!isCustom && state.ganttOffset!==0) ? `<button class="gantt-nav-btn" id="ganttToday" style="font-size:11px;padding:4px 10px;">오늘</button>` : ''}
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <button class="completed-toggle ${state.ganttHideMember?'on':''}" id="ganttHideMemberBtn">담당 ${state.ganttHideMember?'표시':'숨김'}</button>
       <div style="display:flex;align-items:center;gap:4px;background:var(--color-background-secondary);border:1px solid var(--color-border-secondary);border-radius:8px;padding:3px 8px;">
         <input type="date" id="ganttStartPick" value="${state.ganttCustomStart||''}" style="font-size:11px;border:none;background:transparent;outline:none;cursor:pointer;color:var(--color-text-primary);">
         <span style="font-size:11px;color:var(--color-text-tertiary);">~</span>
@@ -776,7 +778,7 @@ function renderFlowGantt(ft, container) {
       <tr>
         <th style="width:${nameW}px;text-align:left;padding:5px 8px;">업무</th>
         <th style="width:28px;text-align:center;font-size:12px;">완료</th>
-        <th style="width:${memberW}px;text-align:center;">담당</th>
+        ${!state.ganttHideMember ? `<th style="width:${memberW}px;text-align:center;">담당</th>` : ''}
         ${dates.map((d,i) => {          const isToday   = sameDay(d, TODAY);
           const isWeekend = d.getDay()===0||d.getDay()===6;
           return `<th style="width:${colW}px;text-align:center;${isToday?'background:var(--color-background-info);color:var(--color-text-info);font-weight:600;':''}${isWeekend?'opacity:.45':''}">${dayLabels[i]}${DAYS===14?`<br><span style="font-size:11px;">${dayNames[d.getDay()]}</span>`:''}</th>`;
@@ -862,7 +864,7 @@ function renderFlowGantt(ft, container) {
           <span class="check-box" style="width:15px;height:15px;font-size:9px;">${t.status==='완료'?'✓':''}</span>
         </label>
       </td>
-      <td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 22)}</div></td>
+      ${!state.ganttHideMember ? `<td style="padding:4px;text-align:center;"><div style="display:flex;justify-content:center;">${renderAvatars(t.assignee, 22)}</div></td>` : ''}
       ${cells}
       </tr>`;
   });
@@ -882,6 +884,7 @@ function renderFlowGantt(ft, container) {
   container.querySelector('#ganttToday')?.addEventListener('click', () => { state.ganttOffset = 0; renderFlow(); });
   container.querySelector('#gantt2w')?.addEventListener('click', () => { state.ganttDays = 14; state.ganttOffset = 0; state.ganttCustomStart = ''; state.ganttCustomEnd = ''; renderFlow(); });
   container.querySelector('#gantt1m')?.addEventListener('click', () => { state.ganttDays = 30; state.ganttOffset = 0; state.ganttCustomStart = ''; state.ganttCustomEnd = ''; renderFlow(); });
+  container.querySelector('#ganttHideMemberBtn')?.addEventListener('click', () => { state.ganttHideMember = !state.ganttHideMember; renderFlow(); });
   container.querySelector('#ganttClearCustom')?.addEventListener('click', () => { state.ganttCustomStart = ''; state.ganttCustomEnd = ''; renderFlow(); });
 
   // 날짜 직접 선택
