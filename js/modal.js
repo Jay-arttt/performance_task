@@ -486,7 +486,7 @@ function buildModalHTML(mode, sheetName, task) {
   const v = (key, fallback = '') => task ? (task[key] ?? fallback) : fallback;
 
   const priorityField = `${fieldSelect('priority', '우선순위',
-    [{value:'일반',label:'일반'},{value:'긴급',label:'🔴 긴급'}],
+    [{value:'일반',label:'일반'},{value:'긴급',label:'🔴 긴급'},{value:'공지',label:'📌 공지'}],
     v('priority','일반'))}`;
 
   let fields = '';

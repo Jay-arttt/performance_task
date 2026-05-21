@@ -426,20 +426,24 @@ function renderFlowBoard(ft, container) {
 
 function makeCampaignCard(t) {
   const due = dueInfo(t.due);
-  const isUrgent = t.priority === '긴급';
+  const isUrgent  = t.priority === '긴급';
+  const isNotice  = t.priority === '공지';
+  const barColor  = isUrgent ? '#E24B4A' : isNotice ? '#D4920A' : brandColor(t.brand);
   const ss = STATUS_STYLE[t.status] || STATUS_STYLE['진행중'];
 
   const el = document.createElement('div');
-  el.className = 'task-card' + (isUrgent ? ' urgent-card' : '') + (t.status === '완료' ? ' status-done' : '');
+  el.className = 'task-card' + (isUrgent ? ' urgent-card' : '') + (isNotice ? ' notice-card' : '') + (t.status === '완료' ? ' status-done' : '');
   el.dataset.id = t.id; el.draggable = true;
 
   el.innerHTML = `
     <button class="card-menu-btn" data-id="${t.id}" data-sheet="campaign" title="더보기"><span style="letter-spacing:1px;">···</span></button>
     <button class="card-urgent-btn ${isUrgent ? 'on' : ''}" title="${isUrgent ? '긴급 해제' : '긴급 설정'}" data-id="${t.id}">!</button>
-    <div class="card-brand-bar" style="background:${isUrgent ? '#E24B4A' : brandColor(t.brand)}"></div>
+    <button class="card-notice-btn ${isNotice ? 'on' : ''}" title="${isNotice ? '공지 해제' : '공지 설정'}" data-id="${t.id}">📌</button>
+    <div class="card-brand-bar" style="background:${barColor}"></div>
     <div class="card-title">${t.title}</div>
     <div class="card-tags">
       ${isUrgent ? `<span class="tag urgent-tag">긴급</span>` : ''}
+      ${isNotice ? `<span class="tag notice-tag">공지</span>` : ''}
       ${t.status === '컨펌대기' ? `<span class="tag" style="background:${ss.bg};color:${ss.c}">컨펌대기</span>` : ''}
       ${state.brand === 'all' ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : ''}
     </div>
@@ -478,10 +482,16 @@ function makeCampaignCard(t) {
     e.stopPropagation();
     const newPriority = t.priority === '긴급' ? '일반' : '긴급';
     t.priority = newPriority;
-    try {
-      callAppsScript({ action: 'update', sheetName: 'campaign', id: t.id, row: { priority: newPriority } });
-    } catch (_) {}
+    callAppsScript({ action:'update', sheetName:'campaign', id:t.id, row:{ priority: newPriority } }, { silent:true });
     showToast(newPriority === '긴급' ? `"${t.title}" 긴급 설정됨` : `"${t.title}" 긴급 해제됨`);
+    renderCurrentView();
+  });
+  el.querySelector('.card-notice-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const newPriority = t.priority === '공지' ? '일반' : '공지';
+    t.priority = newPriority;
+    callAppsScript({ action:'update', sheetName:'campaign', id:t.id, row:{ priority: newPriority } }, { silent:true });
+    showToast(newPriority === '공지' ? `"${t.title}" 공지 설정됨` : `"${t.title}" 공지 해제됨`);
     renderCurrentView();
   });
 
@@ -521,8 +531,8 @@ function removePH() { if (state.placeholder?.parentNode) state.placeholder.paren
 function renderFlowList(ft, container) {
   const sorted = [...ft].sort((a, b) => {
     // 긴급 업무 항상 상단
-    const ua = a.priority === '긴급' ? 0 : 1;
-    const ub = b.priority === '긴급' ? 0 : 1;
+    const ua = a.priority === '긴급' ? 0 : a.priority === '공지' ? 1 : 2;
+    const ub = b.priority === '긴급' ? 0 : b.priority === '공지' ? 1 : 2;
     if (ua !== ub) return ua - ub;
     let va = a[state.sortKey] || '', vb = b[state.sortKey] || '';
     if (state.sortKey === 'due') { va = new Date(va).getTime(); vb = new Date(vb).getTime(); }
@@ -570,6 +580,7 @@ function renderFlowList(ft, container) {
 
     const tr = document.createElement('tr');
     if (t.priority === '긴급') tr.style.background = '#FEF2F2';
+    else if (t.priority === '공지') tr.style.background = '#FFFBEB';
     tr.innerHTML = `
       <td style="max-width:200px;">
         <div style="display:flex;align-items:center;gap:4px;">
@@ -788,13 +799,13 @@ function renderFlowGantt(ft, container) {
     <tbody>`;
 
   const sorted  = [...ft].filter(t => t.startDate || t.due).sort((a,b) => {
-    const ua = a.priority === '긴급' ? 0 : 1;
-    const ub = b.priority === '긴급' ? 0 : 1;
+    const ua = a.priority === '긴급' ? 0 : a.priority === '공지' ? 1 : 2;
+    const ub = b.priority === '긴급' ? 0 : b.priority === '공지' ? 1 : 2;
     if (ua !== ub) return ua - ub;
     return new Date(a.startDate || a.due) - new Date(b.startDate || b.due);
   });
   const noDate  = ft.filter(t => !t.startDate && !t.due).sort((a,b) =>
-    (a.priority === '긴급' ? 0 : 1) - (b.priority === '긴급' ? 0 : 1)
+    (a.priority === '긴급' ? 0 : a.priority === '공지' ? 1 : 2) - (b.priority === '긴급' ? 0 : b.priority === '공지' ? 1 : 2)
   );
   const allRows = [...sorted, ...noDate];
 
@@ -810,7 +821,7 @@ function renderFlowGantt(ft, container) {
   allRows.forEach((t, rowIdx) => {
     const isLive    = t.step === 'Live';
     const bId    = String(t.brand || '');
-    const bColor = t.priority === '긴급' ? '#E24B4A' : brandColor(bId);
+    const bColor = t.priority === '긴급' ? '#E24B4A' : t.priority === '공지' ? '#D4920A' : brandColor(bId);
     const { base: baseName } = splitTitle(t.title);
 
     // 이전 행과 기본 업무명 같으면 이름 숨김
@@ -845,7 +856,7 @@ function renderFlowGantt(ft, container) {
 
     // 업무명 구분선 — 새 업무 시작 시 위쪽에 얇은 선
     const rowBorder = showName && rowIdx > 0 ? 'border-top:1.5px solid var(--color-border-secondary);' : '';
-    const urgentBg  = t.priority === '긴급' ? 'background:#FEF2F2;' : '';
+    const urgentBg = t.priority === '긴급' ? 'background:#FEF2F2;' : t.priority === '공지' ? 'background:#FFFBEB;' : '';
 
     html += `<tr style="cursor:pointer;${rowBorder}${urgentBg}${t.status==='완료'?'opacity:.55;':''}" class="gantt-row" data-id="${t.id}">
       <td style="padding:4px 8px;max-width:${nameW}px;font-size:11px;color:var(--text-1);" title="${t.title}">
@@ -1020,7 +1031,7 @@ function renderDailyDay() {
     } else {
       // 긴급 업무 상단 정렬
       const sortedTasks = [...allTasks].sort((a, b) =>
-        (a.priority === '긴급' ? 0 : 1) - (b.priority === '긴급' ? 0 : 1)
+        (a.priority === '긴급' ? 0 : a.priority === '공지' ? 1 : 2) - (b.priority === '긴급' ? 0 : b.priority === '공지' ? 1 : 2)
       );
       sortedTasks.forEach(t => col.appendChild(makeDailyCard(t)));
     }
@@ -1206,14 +1217,16 @@ function makeDailyCard(t) {
   const isReport = t._src === 'report';
   const isEtc    = t._src === 'common';
   const isUrgent = t.priority === '긴급';
+  const isNotice = t.priority === '공지';
   const rs = isReport ? REPORT_STYLE[t.type] || null : null;
   const es = isEtc ? ETC_TYPES[t.type] || ETC_TYPES['기타'] : null;
   const typeLabel = isReport ? t.type : isEtc ? (es?.label || '공통') : '';
+  const dBarColor = isUrgent ? '#E24B4A' : isNotice ? '#D4920A' : (t.brand ? brandColor(t.brand) : '#888780');
 
   const isDone = t._src === 'campaign' ? t.status === '완료' : (t.done === true || t.done === 'TRUE');
 
   const el = document.createElement('div');
-  el.className = 'daily-card' + (isUrgent ? ' urgent-card' : '') + (isDone ? ' done-card' : '');
+  el.className = 'daily-card' + (isUrgent ? ' urgent-card' : '') + (isNotice ? ' notice-card' : '') + (isDone ? ' done-card' : '');
   el.draggable = true;
   el.dataset.id  = String(t.id);
   el.dataset.src = t._src;
@@ -1221,12 +1234,14 @@ function makeDailyCard(t) {
 
   el.innerHTML = `
     <button class="card-urgent-btn ${isUrgent?'on':''}" data-id="${t.id}" data-src="${t._src}" title="${isUrgent?'긴급 해제':'긴급 설정'}">!</button>
-    <div class="card-brand-bar" style="background:${isUrgent?'#E24B4A':(t.brand?brandColor(t.brand):'#888780')}"></div>
+    <button class="card-notice-btn ${isNotice?'on':''}" data-id="${t.id}" data-src="${t._src}" title="${isNotice?'공지 해제':'공지 설정'}">📌</button>
+    <div class="card-brand-bar" style="background:${dBarColor}"></div>
     <div class="card-title daily-title-link" style="cursor:pointer;">
       ${t.title}
     </div>
     <div class="card-tags">
       ${isUrgent ? '<span class="tag urgent-tag">긴급</span>' : ''}
+      ${isNotice ? '<span class="tag notice-tag">공지</span>' : ''}
       ${t.brand ? `<span class="tag" style="${brandTagStyle(t.brand)}">${brandLabel(t.brand)}</span>` : '<span class="tag brand-tag">공통</span>'}
       ${rs ? `<span class="tag" style="background:${rs.bg};color:${rs.c}">${t.type}</span>` : ''}
       ${es && isEtc ? `<span class="tag" style="background:${es.bg};color:${es.c}">${es.label}</span>` : ''}
@@ -1253,6 +1268,21 @@ function makeDailyCard(t) {
     task.priority = newUrgent ? '긴급' : '일반';
     callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ priority: task.priority } }, { silent:true });
     showToast(newUrgent ? `"${task.title}" 긴급 설정됐어요` : `"${task.title}" 긴급 해제됐어요`);
+    renderDaily();
+  });
+
+  // 공지 버튼 이벤트
+  el.querySelector('.card-notice-btn')?.addEventListener('click', e => {
+    e.stopPropagation();
+    const src   = e.currentTarget.dataset.src;
+    const id    = e.currentTarget.dataset.id;
+    const dbKey = src === 'campaign' ? 'campaign' : src === 'common' ? 'common' : 'report';
+    const task  = DB[dbKey].find(x => String(x.id) === String(id));
+    if (!task) return;
+    const newNotice = task.priority !== '공지';
+    task.priority = newNotice ? '공지' : '일반';
+    callAppsScript({ action:'update', sheetName:src, id:task.id, row:{ priority: task.priority } }, { silent:true });
+    showToast(newNotice ? `"${task.title}" 공지 설정됐어요` : `"${task.title}" 공지 해제됐어요`);
     renderDaily();
   });
 
